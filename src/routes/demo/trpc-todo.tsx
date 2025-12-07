@@ -26,7 +26,7 @@ function TRPCTodos() {
   })
 
   const submitTodo = useCallback(() => {
-    addTodo({ name: todo })
+    addTodo({ title: todo })
   }, [addTodo, todo])
 
   return (
@@ -45,7 +45,7 @@ function TRPCTodos() {
               key={t.id}
               className="bg-white/10 border border-white/20 rounded-lg p-3 backdrop-blur-sm shadow-md"
             >
-              <span className="text-lg text-white">{t.name}</span>
+              <span className="text-lg text-white">{t.title}</span>
             </li>
           ))}
         </ul>
