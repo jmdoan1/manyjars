@@ -15,10 +15,13 @@ model User {
   displayName String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  todos       Todo[]
 }
 
 model Todo {
   id        String   @id @default(uuid())
   title     String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
