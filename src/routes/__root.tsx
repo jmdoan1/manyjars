@@ -22,6 +22,7 @@ import type { QueryClient } from '@tanstack/react-query'
 
 import type { TRPCRouter } from '@/integrations/trpc/router'
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query'
+import { AuthWrapper } from '@/integrations/clerk/auth-wrapper'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -63,21 +64,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <ClerkProvider>
           <ConvexProvider>
-            <Header />
-            {children}
-            <TanStackDevtools
-              config={{
-                position: 'bottom-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-                StoreDevtools,
-                TanStackQueryDevtools,
-              ]}
-            />
+            <AuthWrapper>
+              <Header />
+              {children}
+              <TanStackDevtools
+                config={{
+                  position: 'bottom-right',
+                }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                  StoreDevtools,
+                  TanStackQueryDevtools,
+                ]}
+              />
+            </AuthWrapper>
           </ConvexProvider>
         </ClerkProvider>
         <Scripts />

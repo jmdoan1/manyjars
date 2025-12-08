@@ -1,3 +1,4 @@
+import { SignIn, SignUp } from '@clerk/clerk-react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   Zap,

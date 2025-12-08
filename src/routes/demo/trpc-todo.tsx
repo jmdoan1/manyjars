@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
+import { useUser } from '@clerk/clerk-react'
 
 export const Route = createFileRoute('/demo/trpc-todo')({
   component: TRPCTodos,
@@ -13,6 +14,8 @@ export const Route = createFileRoute('/demo/trpc-todo')({
 })
 
 function TRPCTodos() {
+  const { isSignedIn, user, isLoaded } = useUser()
+
   const trpc = useTRPC()
   const { data, refetch } = useQuery(trpc.todos.list.queryOptions())
 
@@ -28,6 +31,14 @@ function TRPCTodos() {
   const submitTodo = useCallback(() => {
     addTodo({ title: todo })
   }, [addTodo, todo])
+
+  if (!isLoaded) {
+    return <div className="p-4">Loading...</div>
+  }
+
+  if (!isSignedIn) {
+    return <div className="p-4">Sign in to view this page</div>
+  }
 
   return (
     <div

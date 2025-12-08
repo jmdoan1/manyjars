@@ -16,5 +16,19 @@ function App() {
     return <div className="p-4">Sign in to view this page</div>
   }
 
-  return <div className="p-4">Hello {user.firstName}!</div>
+  return <div className="p-4">
+    <div>Hello {user.firstName}!</div>
+    {user.id}<br/>
+    {user.username ?? ":("}<br/>
+    {user.emailAddresses.map(email => (
+      <div key={email.id}>
+        {email.emailAddress} {email.verification.status === "verified" ? "(verified)" : "(unverified)"}
+      </div>
+    ))}
+    {user.unverifiedExternalAccounts.map(account => (
+      <div key={account.id}>
+        {account.provider} - {account.providerUserId} ({account.emailAddress ?? "no email"})
+      </div>
+    ))}
+    </div>
 }
