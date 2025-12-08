@@ -1,4 +1,3 @@
-import { SignIn, SignUp } from '@clerk/clerk-react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   Zap,
@@ -52,7 +51,7 @@ function App() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="flex-1 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <section className="relative py-20 px-6 text-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10"></div>
         <div className="relative max-w-5xl mx-auto">

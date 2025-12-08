@@ -61,12 +61,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen flex flex-col">
         <ClerkProvider>
           <ConvexProvider>
             <AuthWrapper>
               <Header />
-              {children}
+              <main className="flex-1 flex flex-col">{children}</main>
               <TanStackDevtools
                 config={{
                   position: 'bottom-right',

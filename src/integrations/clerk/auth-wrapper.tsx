@@ -32,7 +32,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
               manyjar
             </h1>
             <p className="text-slate-300">
-              Sign {isSignIn ? 'in' : 'up'} to manage your lives, tasks, and AI.
+              Sign {isSignIn ? 'in' : 'up'} to manage your Jars.
             </p>
           </div>
 

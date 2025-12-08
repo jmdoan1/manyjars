@@ -32,7 +32,7 @@ function TRPCTodos() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 text-white"
+      className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-100 to-blue-100 p-4 text-white"
       style={{
         backgroundImage:
           'radial-gradient(50% 50% at 95% 5%, #4a90c2 0%, #317eb9 50%, #1e4d72 100%)',

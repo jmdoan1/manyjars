@@ -18,7 +18,7 @@ function Home() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen p-4 text-white"
+      className="flex-1 flex items-center justify-center p-4 text-white"
       style={{
         backgroundColor: '#000',
         backgroundImage:

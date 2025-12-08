@@ -45,7 +45,7 @@ function ConvexTodos() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="flex-1 flex items-center justify-center p-4"
       style={{
         background:
           'linear-gradient(135deg, #667a56 0%, #8fbc8f 25%, #90ee90 50%, #98fb98 75%, #f0fff0 100%)',

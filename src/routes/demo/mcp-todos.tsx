@@ -33,7 +33,7 @@ function ORPCTodos() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen bg-gradient-to-br from-teal-200 to-emerald-900 p-4 text-white"
+      className="flex-1 flex items-center justify-center bg-gradient-to-br from-teal-200 to-emerald-900 p-4 text-white"
       style={{
         backgroundImage:
           'radial-gradient(70% 70% at 20% 20%, #07A798 0%, #045C4B 60%, #01251F 100%)',

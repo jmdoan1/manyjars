@@ -141,7 +141,7 @@ function TableDemo() {
   }, [table.getState().columnFilters[0]?.id])
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
+    <div className="flex-1 bg-gray-900 p-6">
       <div>
         <DebouncedInput
           value={globalFilter ?? ''}
