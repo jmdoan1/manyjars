@@ -49,3 +49,13 @@ export type User = Prisma.UserModel
  * 
  */
 export type Todo = Prisma.TodoModel
+/**
+ * Model Jar
+ * 
+ */
+export type Jar = Prisma.JarModel
+/**
+ * Model Tag
+ * 
+ */
+export type Tag = Prisma.TagModel

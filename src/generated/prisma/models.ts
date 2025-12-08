@@ -10,4 +10,6 @@
  */
 export type * from './models/User.ts'
 export type * from './models/Todo.ts'
+export type * from './models/Jar.ts'
+export type * from './models/Tag.ts'
 export type * from './commonInputTypes.ts'

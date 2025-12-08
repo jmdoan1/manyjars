@@ -15,7 +15,10 @@ model User {
   displayName String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  todos       Todo[]
+
+  todos Todo[]
+  jars  Jar[]
+  tags  Tag[]
 }
 
 model Todo {
@@ -24,4 +27,44 @@ model Todo {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  completed Boolean  @default(false)
+  // e.g. 1 = low, 2 = medium, 3 = high; tweak as you like
+  priority  Int?
+
+  jars Jar[] @relation("TodoJars")
+  tags Tag[] @relation("TodoTags")
+}
+
+model Jar {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  todos Todo[] @relation("TodoJars")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
+model Tag {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  todos Todo[] @relation("TodoTags")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
 }
