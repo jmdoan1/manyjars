@@ -231,6 +231,7 @@ function TRPCTodos() {
     useState<MentionPosition>(null)
   const [highlightedIndex, setHighlightedIndex] =
     useState<number>(-1)
+  const [showCompleted, setShowCompleted] = useState(false)
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
@@ -501,7 +502,7 @@ function TRPCTodos() {
 
   return (
     <div
-      className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-100 to-blue-100 p-4 text-white"
+      className="flex-1 flex items-center justify-center bg-linear-to-br from-purple-100 to-blue-100 p-4 text-white"
       style={{
         backgroundImage:
           'radial-gradient(50% 50% at 95% 5%, #4a90c2 0%, #317eb9 50%, #1e4d72 100%)',
@@ -642,7 +643,7 @@ function TRPCTodos() {
         </div>
 
         <ul className="mt-4 space-y-2">
-          {todos?.map((t) => (
+          {todos?.filter(t => !t.completed).map((t) => (
             <li
               key={t.id}
               className="bg-white/10 border border-white/20 rounded-lg p-3 backdrop-blur-sm shadow-md flex flex-col gap-2"
@@ -719,6 +720,103 @@ function TRPCTodos() {
             </li>
           ))}
         </ul>
+
+        {/* Completed tasks section */}
+        {todos?.some(t => t.completed) && (
+          <div className="mt-6">
+            <button
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm"
+            >
+              <svg
+                className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              <span>Completed ({todos.filter(t => t.completed).length})</span>
+            </button>
+
+            {showCompleted && (
+              <ul className="mt-2 space-y-2">
+                {todos.filter(t => t.completed).map((t) => (
+                  <li
+                    key={t.id}
+                    className="bg-white/5 border border-white/10 rounded-lg p-3 backdrop-blur-sm shadow-md flex flex-col gap-2 opacity-70"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={t.completed}
+                          onChange={(e) =>
+                            updateTodo({
+                              id: t.id,
+                              completed: e.target.checked,
+                            })
+                          }
+                          className="h-4 w-4"
+                        />
+                        <span className="text-lg text-white line-through opacity-70">
+                          {t.title}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => deleteTodo({ id: t.id })}
+                        className="text-xs px-2 py-1 rounded bg-red-500/80 hover:bg-red-600 disabled:bg-red-500/40"
+                      >
+                        Delete
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-xs text-white/80">
+                      {t.jars?.map((j) => (
+                        <span
+                          key={j.id}
+                          className="inline-flex items-center gap-1 rounded-full bg-purple-500/40 px-2 py-0.5 border border-purple-300/40 text-purple-50"
+                        >
+                          <span className="text-[10px]">@</span>
+                          <span>{j.name}</span>
+                        </span>
+                      ))}
+
+                      {t.tags?.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-500/40 px-2 py-0.5 border border-emerald-300/40 text-emerald-50"
+                        >
+                          <span className="text-[10px]">#</span>
+                          <span>{tag.name}</span>
+                        </span>
+                      ))}
+
+                      {t.priority && (
+                        <span
+                          className={
+                            t.priority === 'VERY_HIGH'
+                              ? 'inline-flex items-center gap-1 rounded-full bg-fuchsia-500/40 border border-fuchsia-300/40 px-2 py-0.5 text-fuchsia-50'
+                              : t.priority === 'HIGH'
+                              ? 'inline-flex items-center gap-1 rounded-full bg-rose-500/40 border border-rose-300/40 px-2 py-0.5 text-rose-50'
+                              : t.priority === 'MEDIUM'
+                              ? 'inline-flex items-center gap-1 rounded-full bg-amber-500/40 border border-amber-300/40 px-2 py-0.5 text-amber-50'
+                              : t.priority === 'LOW'
+                              ? 'inline-flex items-center gap-1 rounded-full bg-sky-500/40 border border-sky-300/40 px-2 py-0.5 text-sky-50'
+                              : 'inline-flex items-center gap-1 rounded-full bg-slate-500/40 border border-slate-300/40 px-2 py-0.5 text-slate-50'
+                          }
+                        >
+                          <span>!{PRIORITY_LABEL[t.priority as PriorityEnum]}</span>
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
