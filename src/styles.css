@@ -89,6 +89,12 @@ code {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.274 0.006 286.033);
   --sidebar-ring: oklch(0.442 0.017 285.786);
+  
+  /* ADHD-friendly custom colors */
+  --adhd-purple-soft: #a78bfa;
+  --adhd-teal-soft: #5eead4;
+  --adhd-purple-glow: rgba(167, 139, 250, 0.2);
+  --adhd-teal-glow: rgba(94, 234, 212, 0.2);
 }
 
 @theme inline {
