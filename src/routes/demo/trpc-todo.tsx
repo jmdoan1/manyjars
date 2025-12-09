@@ -569,6 +569,7 @@ function TRPCTodos() {
               onTextChange={setDescriptionText}
               onMentionChange={handleDescriptionMentionChange}
               onKeyDown={handleDescriptionKeyDown}
+              onSubmit={submitTodo}
               className="w-full"
               editorClassName="focus:ring-2 focus:ring-blue-400"
             />

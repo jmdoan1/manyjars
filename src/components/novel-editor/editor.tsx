@@ -31,6 +31,7 @@ export interface NovelEditorProps {
   onTextChange?: (text: string) => void;
   onMentionChange?: (mention: ActiveMention | null, position: MentionPosition | null) => void;
   onKeyDown?: (event: KeyboardEvent) => boolean | void;
+  onSubmit?: () => void;
   className?: string;
   editorClassName?: string;
   showToolbar?: boolean;
@@ -60,6 +61,7 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
   onTextChange,
   onMentionChange,
   onKeyDown,
+  onSubmit,
   className = "",
   editorClassName = "",
   showToolbar = true,
@@ -206,6 +208,13 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
 
   const handleEditorKeyDown = useCallback(
     (_view: any, event: KeyboardEvent) => {
+      // Handle Cmd+Enter (Mac) or Ctrl+Enter (Windows) for submission
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        onSubmit?.();
+        return true;
+      }
+      
       // Let parent handle keyboard events first
       if (onKeyDown) {
         const handled = onKeyDown(event);
@@ -216,7 +225,7 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
       // Then handle slash command navigation
       return handleCommandNavigation(event);
     },
-    [onKeyDown]
+    [onKeyDown, onSubmit]
   );
 
   const handleCreate = useCallback(({ editor }: { editor: any }) => {
