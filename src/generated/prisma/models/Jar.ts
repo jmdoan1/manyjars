@@ -192,6 +192,7 @@ export type JarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   todos?: Prisma.TodoListRelationFilter
+  notes?: Prisma.NoteListRelationFilter
   linkedJars?: Prisma.JarLinkListRelationFilter
   referencedBy?: Prisma.JarLinkListRelationFilter
   linkedTags?: Prisma.JarTagLinkListRelationFilter
@@ -206,6 +207,7 @@ export type JarOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   todos?: Prisma.TodoOrderByRelationAggregateInput
+  notes?: Prisma.NoteOrderByRelationAggregateInput
   linkedJars?: Prisma.JarLinkOrderByRelationAggregateInput
   referencedBy?: Prisma.JarLinkOrderByRelationAggregateInput
   linkedTags?: Prisma.JarTagLinkOrderByRelationAggregateInput
@@ -224,6 +226,7 @@ export type JarWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   todos?: Prisma.TodoListRelationFilter
+  notes?: Prisma.NoteListRelationFilter
   linkedJars?: Prisma.JarLinkListRelationFilter
   referencedBy?: Prisma.JarLinkListRelationFilter
   linkedTags?: Prisma.JarTagLinkListRelationFilter
@@ -261,6 +264,7 @@ export type JarCreateInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
   todos?: Prisma.TodoCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkCreateNestedManyWithoutJarInput
@@ -274,6 +278,7 @@ export type JarUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkUncheckedCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkUncheckedCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutJarInput
@@ -287,6 +292,7 @@ export type JarUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
   todos?: Prisma.TodoUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUpdateManyWithoutJarNestedInput
@@ -300,6 +306,7 @@ export type JarUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUncheckedUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUncheckedUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUncheckedUpdateManyWithoutJarNestedInput
@@ -500,6 +507,44 @@ export type JarUpdateOneRequiredWithoutLinkedTagsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.JarUpdateToOneWithWhereWithoutLinkedTagsInput, Prisma.JarUpdateWithoutLinkedTagsInput>, Prisma.JarUncheckedUpdateWithoutLinkedTagsInput>
 }
 
+export type JarCreateNestedManyWithoutNotesInput = {
+  create?: Prisma.XOR<Prisma.JarCreateWithoutNotesInput, Prisma.JarUncheckedCreateWithoutNotesInput> | Prisma.JarCreateWithoutNotesInput[] | Prisma.JarUncheckedCreateWithoutNotesInput[]
+  connectOrCreate?: Prisma.JarCreateOrConnectWithoutNotesInput | Prisma.JarCreateOrConnectWithoutNotesInput[]
+  connect?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+}
+
+export type JarUncheckedCreateNestedManyWithoutNotesInput = {
+  create?: Prisma.XOR<Prisma.JarCreateWithoutNotesInput, Prisma.JarUncheckedCreateWithoutNotesInput> | Prisma.JarCreateWithoutNotesInput[] | Prisma.JarUncheckedCreateWithoutNotesInput[]
+  connectOrCreate?: Prisma.JarCreateOrConnectWithoutNotesInput | Prisma.JarCreateOrConnectWithoutNotesInput[]
+  connect?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+}
+
+export type JarUpdateManyWithoutNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.JarCreateWithoutNotesInput, Prisma.JarUncheckedCreateWithoutNotesInput> | Prisma.JarCreateWithoutNotesInput[] | Prisma.JarUncheckedCreateWithoutNotesInput[]
+  connectOrCreate?: Prisma.JarCreateOrConnectWithoutNotesInput | Prisma.JarCreateOrConnectWithoutNotesInput[]
+  upsert?: Prisma.JarUpsertWithWhereUniqueWithoutNotesInput | Prisma.JarUpsertWithWhereUniqueWithoutNotesInput[]
+  set?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  disconnect?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  delete?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  connect?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  update?: Prisma.JarUpdateWithWhereUniqueWithoutNotesInput | Prisma.JarUpdateWithWhereUniqueWithoutNotesInput[]
+  updateMany?: Prisma.JarUpdateManyWithWhereWithoutNotesInput | Prisma.JarUpdateManyWithWhereWithoutNotesInput[]
+  deleteMany?: Prisma.JarScalarWhereInput | Prisma.JarScalarWhereInput[]
+}
+
+export type JarUncheckedUpdateManyWithoutNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.JarCreateWithoutNotesInput, Prisma.JarUncheckedCreateWithoutNotesInput> | Prisma.JarCreateWithoutNotesInput[] | Prisma.JarUncheckedCreateWithoutNotesInput[]
+  connectOrCreate?: Prisma.JarCreateOrConnectWithoutNotesInput | Prisma.JarCreateOrConnectWithoutNotesInput[]
+  upsert?: Prisma.JarUpsertWithWhereUniqueWithoutNotesInput | Prisma.JarUpsertWithWhereUniqueWithoutNotesInput[]
+  set?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  disconnect?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  delete?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  connect?: Prisma.JarWhereUniqueInput | Prisma.JarWhereUniqueInput[]
+  update?: Prisma.JarUpdateWithWhereUniqueWithoutNotesInput | Prisma.JarUpdateWithWhereUniqueWithoutNotesInput[]
+  updateMany?: Prisma.JarUpdateManyWithWhereWithoutNotesInput | Prisma.JarUpdateManyWithWhereWithoutNotesInput[]
+  deleteMany?: Prisma.JarScalarWhereInput | Prisma.JarScalarWhereInput[]
+}
+
 export type JarCreateWithoutUserInput = {
   id?: string
   name: string
@@ -507,6 +552,7 @@ export type JarCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkCreateNestedManyWithoutJarInput
@@ -519,6 +565,7 @@ export type JarUncheckedCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkUncheckedCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkUncheckedCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutJarInput
@@ -569,6 +616,7 @@ export type JarCreateWithoutTodosInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkCreateNestedManyWithoutJarInput
@@ -581,6 +629,7 @@ export type JarUncheckedCreateWithoutTodosInput = {
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkUncheckedCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkUncheckedCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutJarInput
@@ -615,6 +664,7 @@ export type JarCreateWithoutLinkedJarsInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
   todos?: Prisma.TodoCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutJarsInput
   referencedBy?: Prisma.JarLinkCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkCreateNestedManyWithoutJarInput
 }
@@ -627,6 +677,7 @@ export type JarUncheckedCreateWithoutLinkedJarsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutJarsInput
   referencedBy?: Prisma.JarLinkUncheckedCreateNestedManyWithoutTargetJarInput
   linkedTags?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutJarInput
 }
@@ -644,6 +695,7 @@ export type JarCreateWithoutReferencedByInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
   todos?: Prisma.TodoCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkCreateNestedManyWithoutSourceJarInput
   linkedTags?: Prisma.JarTagLinkCreateNestedManyWithoutJarInput
 }
@@ -656,6 +708,7 @@ export type JarUncheckedCreateWithoutReferencedByInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkUncheckedCreateNestedManyWithoutSourceJarInput
   linkedTags?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutJarInput
 }
@@ -684,6 +737,7 @@ export type JarUpdateWithoutLinkedJarsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
   todos?: Prisma.TodoUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutJarsNestedInput
   referencedBy?: Prisma.JarLinkUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUpdateManyWithoutJarNestedInput
 }
@@ -696,6 +750,7 @@ export type JarUncheckedUpdateWithoutLinkedJarsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutJarsNestedInput
   referencedBy?: Prisma.JarLinkUncheckedUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUncheckedUpdateManyWithoutJarNestedInput
 }
@@ -719,6 +774,7 @@ export type JarUpdateWithoutReferencedByInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
   todos?: Prisma.TodoUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUpdateManyWithoutSourceJarNestedInput
   linkedTags?: Prisma.JarTagLinkUpdateManyWithoutJarNestedInput
 }
@@ -731,6 +787,7 @@ export type JarUncheckedUpdateWithoutReferencedByInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUncheckedUpdateManyWithoutSourceJarNestedInput
   linkedTags?: Prisma.JarTagLinkUncheckedUpdateManyWithoutJarNestedInput
 }
@@ -743,6 +800,7 @@ export type JarCreateWithoutLinkedTagsInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
   todos?: Prisma.TodoCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkCreateNestedManyWithoutTargetJarInput
 }
@@ -755,6 +813,7 @@ export type JarUncheckedCreateWithoutLinkedTagsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutJarsInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutJarsInput
   linkedJars?: Prisma.JarLinkUncheckedCreateNestedManyWithoutSourceJarInput
   referencedBy?: Prisma.JarLinkUncheckedCreateNestedManyWithoutTargetJarInput
 }
@@ -783,6 +842,7 @@ export type JarUpdateWithoutLinkedTagsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
   todos?: Prisma.TodoUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUpdateManyWithoutTargetJarNestedInput
 }
@@ -795,8 +855,56 @@ export type JarUncheckedUpdateWithoutLinkedTagsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUncheckedUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUncheckedUpdateManyWithoutTargetJarNestedInput
+}
+
+export type JarCreateWithoutNotesInput = {
+  id?: string
+  name: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutJarsInput
+  todos?: Prisma.TodoCreateNestedManyWithoutJarsInput
+  linkedJars?: Prisma.JarLinkCreateNestedManyWithoutSourceJarInput
+  referencedBy?: Prisma.JarLinkCreateNestedManyWithoutTargetJarInput
+  linkedTags?: Prisma.JarTagLinkCreateNestedManyWithoutJarInput
+}
+
+export type JarUncheckedCreateWithoutNotesInput = {
+  id?: string
+  name: string
+  description?: string | null
+  userId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  todos?: Prisma.TodoUncheckedCreateNestedManyWithoutJarsInput
+  linkedJars?: Prisma.JarLinkUncheckedCreateNestedManyWithoutSourceJarInput
+  referencedBy?: Prisma.JarLinkUncheckedCreateNestedManyWithoutTargetJarInput
+  linkedTags?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutJarInput
+}
+
+export type JarCreateOrConnectWithoutNotesInput = {
+  where: Prisma.JarWhereUniqueInput
+  create: Prisma.XOR<Prisma.JarCreateWithoutNotesInput, Prisma.JarUncheckedCreateWithoutNotesInput>
+}
+
+export type JarUpsertWithWhereUniqueWithoutNotesInput = {
+  where: Prisma.JarWhereUniqueInput
+  update: Prisma.XOR<Prisma.JarUpdateWithoutNotesInput, Prisma.JarUncheckedUpdateWithoutNotesInput>
+  create: Prisma.XOR<Prisma.JarCreateWithoutNotesInput, Prisma.JarUncheckedCreateWithoutNotesInput>
+}
+
+export type JarUpdateWithWhereUniqueWithoutNotesInput = {
+  where: Prisma.JarWhereUniqueInput
+  data: Prisma.XOR<Prisma.JarUpdateWithoutNotesInput, Prisma.JarUncheckedUpdateWithoutNotesInput>
+}
+
+export type JarUpdateManyWithWhereWithoutNotesInput = {
+  where: Prisma.JarScalarWhereInput
+  data: Prisma.XOR<Prisma.JarUpdateManyMutationInput, Prisma.JarUncheckedUpdateManyWithoutNotesInput>
 }
 
 export type JarCreateManyUserInput = {
@@ -814,6 +922,7 @@ export type JarUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUpdateManyWithoutJarNestedInput
@@ -826,6 +935,7 @@ export type JarUncheckedUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutJarsNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUncheckedUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUncheckedUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUncheckedUpdateManyWithoutJarNestedInput
@@ -846,6 +956,7 @@ export type JarUpdateWithoutTodosInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUpdateManyWithoutJarNestedInput
@@ -858,12 +969,48 @@ export type JarUncheckedUpdateWithoutTodosInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutJarsNestedInput
   linkedJars?: Prisma.JarLinkUncheckedUpdateManyWithoutSourceJarNestedInput
   referencedBy?: Prisma.JarLinkUncheckedUpdateManyWithoutTargetJarNestedInput
   linkedTags?: Prisma.JarTagLinkUncheckedUpdateManyWithoutJarNestedInput
 }
 
 export type JarUncheckedUpdateManyWithoutTodosInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type JarUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
+  todos?: Prisma.TodoUpdateManyWithoutJarsNestedInput
+  linkedJars?: Prisma.JarLinkUpdateManyWithoutSourceJarNestedInput
+  referencedBy?: Prisma.JarLinkUpdateManyWithoutTargetJarNestedInput
+  linkedTags?: Prisma.JarTagLinkUpdateManyWithoutJarNestedInput
+}
+
+export type JarUncheckedUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  todos?: Prisma.TodoUncheckedUpdateManyWithoutJarsNestedInput
+  linkedJars?: Prisma.JarLinkUncheckedUpdateManyWithoutSourceJarNestedInput
+  referencedBy?: Prisma.JarLinkUncheckedUpdateManyWithoutTargetJarNestedInput
+  linkedTags?: Prisma.JarTagLinkUncheckedUpdateManyWithoutJarNestedInput
+}
+
+export type JarUncheckedUpdateManyWithoutNotesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -879,6 +1026,7 @@ export type JarUncheckedUpdateManyWithoutTodosInput = {
 
 export type JarCountOutputType = {
   todos: number
+  notes: number
   linkedJars: number
   referencedBy: number
   linkedTags: number
@@ -886,6 +1034,7 @@ export type JarCountOutputType = {
 
 export type JarCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   todos?: boolean | JarCountOutputTypeCountTodosArgs
+  notes?: boolean | JarCountOutputTypeCountNotesArgs
   linkedJars?: boolean | JarCountOutputTypeCountLinkedJarsArgs
   referencedBy?: boolean | JarCountOutputTypeCountReferencedByArgs
   linkedTags?: boolean | JarCountOutputTypeCountLinkedTagsArgs
@@ -906,6 +1055,13 @@ export type JarCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensio
  */
 export type JarCountOutputTypeCountTodosArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.TodoWhereInput
+}
+
+/**
+ * JarCountOutputType without action
+ */
+export type JarCountOutputTypeCountNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteWhereInput
 }
 
 /**
@@ -939,6 +1095,7 @@ export type JarSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   todos?: boolean | Prisma.Jar$todosArgs<ExtArgs>
+  notes?: boolean | Prisma.Jar$notesArgs<ExtArgs>
   linkedJars?: boolean | Prisma.Jar$linkedJarsArgs<ExtArgs>
   referencedBy?: boolean | Prisma.Jar$referencedByArgs<ExtArgs>
   linkedTags?: boolean | Prisma.Jar$linkedTagsArgs<ExtArgs>
@@ -978,6 +1135,7 @@ export type JarOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
 export type JarInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   todos?: boolean | Prisma.Jar$todosArgs<ExtArgs>
+  notes?: boolean | Prisma.Jar$notesArgs<ExtArgs>
   linkedJars?: boolean | Prisma.Jar$linkedJarsArgs<ExtArgs>
   referencedBy?: boolean | Prisma.Jar$referencedByArgs<ExtArgs>
   linkedTags?: boolean | Prisma.Jar$linkedTagsArgs<ExtArgs>
@@ -995,6 +1153,7 @@ export type $JarPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
     todos: Prisma.$TodoPayload<ExtArgs>[]
+    notes: Prisma.$NotePayload<ExtArgs>[]
     linkedJars: Prisma.$JarLinkPayload<ExtArgs>[]
     referencedBy: Prisma.$JarLinkPayload<ExtArgs>[]
     linkedTags: Prisma.$JarTagLinkPayload<ExtArgs>[]
@@ -1402,6 +1561,7 @@ export interface Prisma__JarClient<T, Null = never, ExtArgs extends runtime.Type
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   todos<T extends Prisma.Jar$todosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Jar$todosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notes<T extends Prisma.Jar$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Jar$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   linkedJars<T extends Prisma.Jar$linkedJarsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Jar$linkedJarsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$JarLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   referencedBy<T extends Prisma.Jar$referencedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Jar$referencedByArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$JarLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   linkedTags<T extends Prisma.Jar$linkedTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Jar$linkedTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$JarTagLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1857,6 +2017,30 @@ export type Jar$todosArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   take?: number
   skip?: number
   distinct?: Prisma.TodoScalarFieldEnum | Prisma.TodoScalarFieldEnum[]
+}
+
+/**
+ * Jar.notes
+ */
+export type Jar$notesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Note
+   */
+  select?: Prisma.NoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Note
+   */
+  omit?: Prisma.NoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteInclude<ExtArgs> | null
+  where?: Prisma.NoteWhereInput
+  orderBy?: Prisma.NoteOrderByWithRelationInput | Prisma.NoteOrderByWithRelationInput[]
+  cursor?: Prisma.NoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteScalarFieldEnum | Prisma.NoteScalarFieldEnum[]
 }
 
 /**

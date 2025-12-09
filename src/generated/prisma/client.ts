@@ -74,3 +74,8 @@ export type TagLink = Prisma.TagLinkModel
  * 
  */
 export type JarTagLink = Prisma.JarTagLinkModel
+/**
+ * Model Note
+ * 
+ */
+export type Note = Prisma.NoteModel

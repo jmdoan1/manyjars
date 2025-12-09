@@ -19,6 +19,7 @@ model User {
   todos Todo[]
   jars  Jar[]
   tags  Tag[]
+  notes Note[]
 }
 
 enum Priority {
@@ -54,6 +55,7 @@ model Jar {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   todos Todo[] @relation("TodoJars")
+  notes Note[] @relation("NoteJars")
 
   // Many-to-many self-references (jars mentioned in this jar's description)
   linkedJars     JarLink[] @relation("SourceJar")
@@ -77,6 +79,7 @@ model Tag {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   todos Todo[] @relation("TodoTags")
+  notes Note[] @relation("NoteTags")
 
   // Many-to-many self-references (tags mentioned in this tag's description)
   linkedTags     TagLink[] @relation("SourceTag")
@@ -133,4 +136,20 @@ model JarTagLink {
   createdAt DateTime @default(now())
 
   @@unique([jarId, tagId])
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  title       String?
+  content     String   // Rich text HTML
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Implicit many-to-many relations (similar to Todo)
+  jars        Jar[]    @relation("NoteJars")
+  tags        Tag[]    @relation("NoteTags")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
