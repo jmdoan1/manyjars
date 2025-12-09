@@ -24,8 +24,6 @@ export interface ModuleSize {
 export interface DashboardModule {
   id: string
   type: string
-  position: ModulePosition
-  size: ModuleSize
   visible: boolean
   config?: Record<string, unknown>
 }
@@ -54,10 +52,19 @@ export interface ModuleProps {
 }
 
 /**
+ * Layout configuration for a specific number of columns
+ */
+export interface ColumnLayout {
+  // Array of columns, each containing an array of module IDs
+  columns: string[][]
+}
+
+/**
  * Dashboard layout configuration
  */
 export interface DashboardLayout {
   modules: DashboardModule[]
+  layouts: Record<number, ColumnLayout>
   version: number
 }
 

@@ -4,10 +4,26 @@ import { useCallback, useEffect, useState } from 'react'
 import type {
   DashboardLayout,
   ModuleDefinition,
+  ColumnLayout,
 } from '@/types/dashboard-types'
 
 const STORAGE_KEY = 'manyjar-dashboard-layout'
-const LAYOUT_VERSION = 2 // Incremented to show new Jars and Tags modules
+const LAYOUT_VERSION = 3 // Incremented for masonry layout support
+
+/**
+ * Helper to generate a default layout one column
+ */
+function getDefaultColumnLayout(moduleIds: string[], columnCount: number): ColumnLayout {
+  const columns: string[][] = Array.from({ length: columnCount }, () => [])
+  
+  // Distribute modules evenly across columns
+  moduleIds.forEach((id, index) => {
+    const columnIndex = index % columnCount
+    columns[columnIndex].push(id)
+  })
+
+  return { columns }
+}
 
 /**
  * Load dashboard layout from localStorage
@@ -27,19 +43,17 @@ function loadLayout(
     console.warn('Failed to load dashboard layout:', error)
   }
 
-  // Return default layout with all registered modules
+  // default modules
+  const modules = moduleDefinitions.map((def, index) => ({
+    id: `${def.type}-${Date.now()}-${index}`,
+    type: def.type,
+    visible: true,
+  }))
+
   return {
     version: LAYOUT_VERSION,
-    modules: moduleDefinitions.map((def, index) => ({
-      id: `${def.type}-${Date.now()}-${index}`,
-      type: def.type,
-      position: {
-        x: 0,
-        y: index,
-      },
-      size: def.defaultSize,
-      visible: true,
-    })),
+    modules,
+    layouts: {}, // innovative lazy initialization? or just init empty
   }
 }
 
@@ -68,39 +82,132 @@ export function useDashboard({ moduleDefinitions }: UseDashboardOptions) {
     saveLayout(layout)
   }, [layout])
 
-  const updateModulePosition = useCallback(
-    (moduleId: string, position: { x: number; y: number }) => {
-      setLayout((prev) => ({
-        ...prev,
-        modules: prev.modules.map((module) =>
-          module.id === moduleId ? { ...module, position } : module,
-        ),
-      }))
-    },
-    [],
-  )
+  /**
+   * Ensure layout exists for a given column count
+   */
+  const ensureLayoutForColumns = useCallback((columnCount: number) => {
+    setLayout((prev) => {
+      if (prev.layouts[columnCount]) {
+        return prev
+      }
 
-  const updateModuleSize = useCallback(
-    (moduleId: string, size: { width: number; height: number }) => {
-      setLayout((prev) => ({
+      // If no layout exists for this column count, create a default one
+      // We take all visible modules and distribute them
+      const visibleModuleIds = prev.modules
+        .filter((m) => m.visible)
+        .map((m) => m.id)
+      
+      const newLayout = getDefaultColumnLayout(visibleModuleIds, columnCount)
+
+      return {
         ...prev,
-        modules: prev.modules.map((module) =>
-          module.id === moduleId ? { ...module, size } : module,
-        ),
-      }))
+        layouts: {
+          ...prev.layouts,
+          [columnCount]: newLayout,
+        },
+      }
+    })
+  }, [])
+
+  const moveModule = useCallback(
+    (
+      moduleId: string,
+      fromColIndex: number,
+      fromIndex: number,
+      toColIndex: number,
+      toIndex: number,
+      columnCount: number
+    ) => {
+      setLayout((prev) => {
+        const currentLayout = prev.layouts[columnCount]
+        if (!currentLayout) return prev
+
+        const newColumns = currentLayout.columns.map((col) => [...col])
+        
+        // Remove from source
+        const sourceCol = newColumns[fromColIndex]
+        if (!sourceCol) return prev // sanity check
+        
+        // Ensure we are moving the correct module
+        if (sourceCol[fromIndex] !== moduleId) {
+          // Fallback: find where it actually is in this column if index is wrong?
+          // For now, assume index is correct or strictly passed
+           // Actually, let's verify
+           if (sourceCol[fromIndex] !== moduleId) return prev
+        }
+
+        sourceCol.splice(fromIndex, 1)
+
+        // Add to destination
+        const destCol = newColumns[toColIndex]
+        if (!destCol) return prev
+
+        destCol.splice(toIndex, 0, moduleId)
+
+        return {
+          ...prev,
+          layouts: {
+            ...prev.layouts,
+            [columnCount]: {
+              columns: newColumns,
+            },
+          },
+        }
+      })
     },
     [],
   )
 
   const toggleModuleVisibility = useCallback((moduleId: string) => {
-    setLayout((prev) => ({
-      ...prev,
-      modules: prev.modules.map((module) =>
+    setLayout((prev) => {
+      const isVisible = prev.modules.find((m) => m.id === moduleId)?.visible
+      const startVisible = !isVisible // We are toggling
+
+      const newModules = prev.modules.map((module) =>
         module.id === moduleId
-          ? { ...module, visible: !module.visible }
+          ? { ...module, visible: startVisible }
           : module,
-      ),
-    }))
+      )
+
+      // If making visible, append to all existing layouts
+      // If hiding, remove from all existing layouts
+      const newLayouts = { ...prev.layouts }
+      Object.keys(newLayouts).forEach((key) => {
+        const colCount = Number(key)
+        const layoutData = newLayouts[colCount]
+        if (!layoutData) return
+
+        const newColumns = layoutData.columns.map((c) => [...c])
+        
+        if (startVisible) {
+          // Append to first column (simplest strategy)
+          // Or find the shortest column?
+          // Let's stick to first column or least populated for better UX
+          let targetColIndex = 0
+          let minLen = newColumns[0].length
+          
+          for(let i=1; i<newColumns.length; i++) {
+             if (newColumns[i].length < minLen) {
+               minLen = newColumns[i].length
+               targetColIndex = i
+             }
+          }
+          newColumns[targetColIndex].push(moduleId)
+        } else {
+          // Remove from wherever it is
+          for(let i=0; i<newColumns.length; i++) {
+            newColumns[i] = newColumns[i].filter(id => id !== moduleId)
+          }
+        }
+        newLayouts[colCount] = { columns: newColumns }
+      })
+
+      return {
+        ...prev,
+        modules: newModules,
+        layouts: newLayouts,
+      }
+    })
   }, [])
 
   const updateModuleConfig = useCallback(
@@ -115,48 +222,28 @@ export function useDashboard({ moduleDefinitions }: UseDashboardOptions) {
     [],
   )
 
-  const reorderModules = useCallback((fromIndex: number, toIndex: number) => {
-    setLayout((prev) => {
-      const newModules = [...prev.modules]
-      const [removed] = newModules.splice(fromIndex, 1)
-      newModules.splice(toIndex, 0, removed)
-
-      // Update positions to reflect new order
-      return {
-        ...prev,
-        modules: newModules.map((module, index) => ({
-          ...module,
-          position: { ...module.position, y: index },
-        })),
-      }
-    })
-  }, [])
-
   const resetLayout = useCallback(() => {
-    const defaultLayout = {
+    const defaultModules = moduleDefinitions.map((def, index) => ({
+      id: `${def.type}-${Date.now()}-${index}`,
+      type: def.type,
+      visible: true,
+    }))
+
+    setLayout({
       version: LAYOUT_VERSION,
-      modules: moduleDefinitions.map((def, index) => ({
-        id: `${def.type}-${Date.now()}-${index}`,
-        type: def.type,
-        position: {
-          x: 0,
-          y: index,
-        },
-        size: def.defaultSize,
-        visible: true,
-      })),
-    }
-    setLayout(defaultLayout)
+      modules: defaultModules,
+      layouts: {}, // Reset all layouts, they will regenerate as needed
+    })
   }, [moduleDefinitions])
 
   return {
     layout,
     modules: layout.modules,
-    updateModulePosition,
-    updateModuleSize,
     toggleModuleVisibility,
     updateModuleConfig,
-    reorderModules,
     resetLayout,
+    // New Actions
+    ensureLayoutForColumns,
+    moveModule,
   }
 }
