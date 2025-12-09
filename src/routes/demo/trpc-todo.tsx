@@ -11,6 +11,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import getCaretCoordinates from 'textarea-caret'
+import { NovelEditor, type NovelEditorHandle } from '@/components/novel-editor'
 import {
   Command,
   CommandEmpty,
@@ -18,197 +19,38 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { NovelEditor, type ActiveMention as EditorActiveMention, type MentionPosition as EditorMentionPosition, type NovelEditorHandle } from '@/components/novel-editor'
+import {
+  getActiveMention,
+  parseMentions,
+  stripPriorityTokens,
+  PRIORITY_LABEL,
+  PRIORITY_OPTIONS,
+  type ActiveMention,
+  type MentionPosition,
+  type PriorityCode,
+  type PriorityOption,
+} from '@/hooks/use-mentions'
 
-type PriorityEnum =
-  | 'VERY_LOW'
-  | 'LOW'
-  | 'MEDIUM'
-  | 'HIGH'
-  | 'VERY_HIGH'
-
+// Local type for parsed todo
 type ParsedTodoMeta = {
   title: string
   description: string
   jars: string[]
   tags: string[]
-  priority?: PriorityEnum
-}
-
-type ActiveMention =
-  | {
-      type: 'jar' | 'tag' | 'priority'
-      query: string
-      start: number
-      end: number
-    }
-  | null
-
-type MentionPosition = {
-  top: number
-  left: number
-} | null
-
-type PriorityOption = {
-  code: PriorityEnum
-  token: string
-  label: string
-  description: string
-}
-
-const PRIORITY_OPTIONS: PriorityOption[] = [
-  {
-    code: 'VERY_LOW',
-    token: 'very-low',
-    label: 'Very low',
-    description: 'Lowest urgency',
-  },
-  {
-    code: 'LOW',
-    token: 'low',
-    label: 'Low',
-    description: 'Nice to do',
-  },
-  {
-    code: 'MEDIUM',
-    token: 'medium',
-    label: 'Medium',
-    description: 'Default priority',
-  },
-  {
-    code: 'HIGH',
-    token: 'high',
-    label: 'High',
-    description: 'Important soon',
-  },
-  {
-    code: 'VERY_HIGH',
-    token: 'very-high',
-    label: 'Very high',
-    description: 'Top of your stack',
-  },
-]
-
-const PRIORITY_TOKEN_MAP: Record<string, PriorityEnum> = {
-  'very-low': 'VERY_LOW',
-  vlow: 'VERY_LOW',
-  vl: 'VERY_LOW',
-
-  low: 'LOW',
-  l: 'LOW',
-
-  medium: 'MEDIUM',
-  med: 'MEDIUM',
-  m: 'MEDIUM',
-
-  high: 'HIGH',
-  h: 'HIGH',
-
-  'very-high': 'VERY_HIGH',
-  vhigh: 'VERY_HIGH',
-  vh: 'VERY_HIGH',
-}
-
-const PRIORITY_LABEL: Record<PriorityEnum, string> = {
-  VERY_LOW: 'Very low',
-  LOW: 'Low',
-  MEDIUM: 'Medium',
-  HIGH: 'High',
-  VERY_HIGH: 'Very high',
+  priority?: PriorityCode
 }
 
 function parseTodoText(title: string, description: string): ParsedTodoMeta {
-  const jarNames = new Set<string>()
-  const tagNames = new Set<string>()
-
-  const jarRegex = /@([a-zA-Z0-9_-]+)/g
-  const tagRegex = /#([a-zA-Z0-9_-]+)/g
-
-  // Parse both title and description for jars, tags, priority
   const combinedText = `${title} ${description}`
-
-  let m: RegExpExecArray | null
-
-  while ((m = jarRegex.exec(combinedText)) !== null) {
-    jarNames.add(m[1])
-  }
-  while ((m = tagRegex.exec(combinedText)) !== null) {
-    tagNames.add(m[1])
-  }
-
-  let priorityCode: PriorityEnum | undefined
-  const pMatch = combinedText.match(/!([a-zA-Z-]+)/)
-  if (pMatch) {
-    const key = (pMatch[1] ?? '').toLowerCase()
-    const mapped = PRIORITY_TOKEN_MAP[key]
-    if (mapped) {
-      priorityCode = mapped
-    }
-  }
-
-  // Strip !priority tokens from both title and description
-  const cleanTitle = title
-    .replace(/!([a-zA-Z-]+)/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  const cleanDescription = description
-    .replace(/!([a-zA-Z-]+)/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  const { jars, tags, priority } = parseMentions(combinedText)
 
   return {
-    title: cleanTitle,
-    description: cleanDescription,
-    jars: Array.from(jarNames),
-    tags: Array.from(tagNames),
-    priority: priorityCode,
+    title: stripPriorityTokens(title),
+    description: stripPriorityTokens(description),
+    jars,
+    tags,
+    priority,
   }
-}
-
-function getActiveMention(
-  text: string,
-  caret: number,
-): ActiveMention {
-  const beforeCaret = text.slice(0, caret)
-
-  const lastSeparator = Math.max(
-    beforeCaret.lastIndexOf(' '),
-    beforeCaret.lastIndexOf('\n'),
-    beforeCaret.lastIndexOf('\t'),
-  )
-
-  const tokenStart = lastSeparator + 1
-  const token = beforeCaret.slice(tokenStart)
-
-  if (token.startsWith('@')) {
-    return {
-      type: 'jar',
-      query: token.slice(1),
-      start: tokenStart,
-      end: caret,
-    }
-  }
-
-  if (token.startsWith('#')) {
-    return {
-      type: 'tag',
-      query: token.slice(1),
-      start: tokenStart,
-      end: caret,
-    }
-  }
-
-  if (token.startsWith('!')) {
-    return {
-      type: 'priority',
-      query: token.slice(1),
-      start: tokenStart,
-      end: caret,
-    }
-  }
-
-  return null
 }
 
 export const Route = createFileRoute('/demo/trpc-todo')({
@@ -240,14 +82,11 @@ function TRPCTodos() {
   const [descriptionText, setDescriptionText] = useState('')
   const [editorKey, setEditorKey] = useState(0)
   const [activeField, setActiveField] = useState<'title' | 'description'>('title')
-  const [activeMention, setActiveMention] =
-    useState<ActiveMention>(null)
-  const [descMention, setDescMention] = useState<EditorActiveMention | null>(null)
-  const [descMentionPos, setDescMentionPos] = useState<EditorMentionPosition | null>(null)
-  const [mentionPos, setMentionPos] =
-    useState<MentionPosition>(null)
-  const [highlightedIndex, setHighlightedIndex] =
-    useState<number>(-1)
+  const [activeMention, setActiveMention] = useState<ActiveMention | null>(null)
+  const [descMention, setDescMention] = useState<ActiveMention | null>(null)
+  const [descMentionPos, setDescMentionPos] = useState<MentionPosition | null>(null)
+  const [mentionPos, setMentionPos] = useState<MentionPosition | null>(null)
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
   const [showCompleted, setShowCompleted] = useState(false)
 
   const titleRef = useRef<HTMLInputElement | null>(null)
@@ -319,7 +158,7 @@ function TRPCTodos() {
     requestAnimationFrame(() => updateMentionState())
   }, [updateMentionState])
 
-  const handleDescriptionMentionChange = useCallback((mention: EditorActiveMention | null, position: EditorMentionPosition | null) => {
+  const handleDescriptionMentionChange = useCallback((mention: ActiveMention | null, position: MentionPosition | null) => {
     setDescMention(mention)
     setDescMentionPos(position)
     setActiveField('description')
@@ -953,7 +792,7 @@ function TRPCTodos() {
                         : 'inline-flex items-center gap-1 rounded-full bg-slate-500/40 border border-slate-300/40 px-2 py-0.5 text-slate-50'
                     }
                   >
-                    <span>!{PRIORITY_LABEL[t.priority as PriorityEnum]}</span>
+                    <span>!{PRIORITY_LABEL[t.priority as PriorityCode]}</span>
                   </span>
                 )}
               </div>
@@ -1054,7 +893,7 @@ function TRPCTodos() {
                               : 'inline-flex items-center gap-1 rounded-full bg-slate-500/40 border border-slate-300/40 px-2 py-0.5 text-slate-50'
                           }
                         >
-                          <span>!{PRIORITY_LABEL[t.priority as PriorityEnum]}</span>
+                          <span>!{PRIORITY_LABEL[t.priority as PriorityCode]}</span>
                         </span>
                       )}
                     </div>

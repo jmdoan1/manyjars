@@ -1,3 +1,4 @@
-export { NovelEditor, type NovelEditorProps, type NovelEditorHandle, type ActiveMention, type MentionType, type MentionPosition } from "./editor";
+export { NovelEditor, type NovelEditorProps, type NovelEditorHandle } from "./editor";
+export type { ActiveMention, MentionType, MentionPosition } from "@/hooks/use-mentions";
 export { defaultExtensions } from "./extensions";
 export { EditorToolbar } from "./toolbar";

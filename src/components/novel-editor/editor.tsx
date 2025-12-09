@@ -15,23 +15,13 @@ import { defaultExtensions } from "./extensions";
 import { slashCommand, suggestionItems } from "./slash-command";
 import { EditorBubbleMenu } from "./bubble-menu";
 import { EditorToolbar } from "./toolbar";
+import { getActiveMention, type ActiveMention, type MentionPosition } from "@/hooks/use-mentions";
 import "./styles.css";
 
 const extensions = [...defaultExtensions, slashCommand];
 
-export type MentionType = "jar" | "tag" | "priority";
-
-export interface ActiveMention {
-  type: MentionType;
-  query: string;
-  start: number;
-  end: number;
-}
-
-export interface MentionPosition {
-  top: number;
-  left: number;
-}
+// Re-export types for convenience
+export type { ActiveMention, MentionPosition, MentionType } from "@/hooks/use-mentions";
 
 export interface NovelEditorProps {
   initialContent?: JSONContent | string;
@@ -49,48 +39,6 @@ export interface NovelEditorProps {
 export interface NovelEditorHandle {
   replaceText: (start: number, end: number, replacement: string) => void;
   focus: () => void;
-}
-
-function getActiveMention(text: string, caret: number): ActiveMention | null {
-  const beforeCaret = text.slice(0, caret);
-
-  const lastSeparator = Math.max(
-    beforeCaret.lastIndexOf(" "),
-    beforeCaret.lastIndexOf("\n"),
-    beforeCaret.lastIndexOf("\t"),
-  );
-
-  const tokenStart = lastSeparator + 1;
-  const token = beforeCaret.slice(tokenStart);
-
-  if (token.startsWith("@")) {
-    return {
-      type: "jar",
-      query: token.slice(1),
-      start: tokenStart,
-      end: caret,
-    };
-  }
-
-  if (token.startsWith("#")) {
-    return {
-      type: "tag",
-      query: token.slice(1),
-      start: tokenStart,
-      end: caret,
-    };
-  }
-
-  if (token.startsWith("!")) {
-    return {
-      type: "priority",
-      query: token.slice(1),
-      start: tokenStart,
-      end: caret,
-    };
-  }
-
-  return null;
 }
 
 export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(function NovelEditor({
@@ -117,16 +65,54 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
     }
   }, [initialContent]);
 
+  /**
+   * Get the text content before cursor in the current block/node.
+   * This avoids complex position mapping by working directly with the resolved position.
+   */
+  const getTextBeforeCursor = useCallback((editor: any): { text: string; blockStart: number } => {
+    const { from } = editor.state.selection;
+    const $from = editor.state.doc.resolve(from);
+    
+    // Get the parent node (paragraph, taskItem content, etc.)
+    const parent = $from.parent;
+    const parentOffset = $from.parentOffset;
+    
+    // Get text content from start of parent to cursor
+    let text = '';
+    for (let i = 0; i < parent.childCount; i++) {
+      const child = parent.child(i);
+      if (child.isText) {
+        const childText = child.text || '';
+        const endPos = text.length + childText.length;
+        if (endPos >= parentOffset) {
+          // Cursor is within or after this text node
+          text += childText.slice(0, parentOffset - text.length);
+          break;
+        }
+        text += childText;
+      }
+    }
+    
+    // blockStart is the ProseMirror position where this parent node's content starts
+    const blockStart = from - parentOffset;
+    
+    return { text, blockStart };
+  }, []);
+
   // Expose imperative methods via ref
   useImperativeHandle(ref, () => ({
     replaceText: (start: number, end: number, replacement: string) => {
       const editor = editorRef.current;
       if (!editor) return;
       
-      // ProseMirror positions are offset by 1 for the opening paragraph tag
-      // So text position 0 is ProseMirror position 1
-      const pmStart = start + 1;
-      const pmEnd = end + 1;
+      // start and end are offsets within the current block
+      // We need to add the block start position
+      const { from } = editor.state.selection;
+      const $from = editor.state.doc.resolve(from);
+      const blockStart = from - $from.parentOffset;
+      
+      const pmStart = blockStart + start;
+      const pmEnd = blockStart + end;
       
       editor.chain()
         .focus()
@@ -156,6 +142,16 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
     }
   }, []);
 
+  /**
+   * Detect mention in the current block where cursor is.
+   * Returns mention with positions relative to the block start.
+   */
+  const detectMention = useCallback((editor: any): ActiveMention | null => {
+    const { text } = getTextBeforeCursor(editor);
+    const caret = text.length;
+    return getActiveMention(text, caret);
+  }, [getTextBeforeCursor]);
+
   const handleUpdate = useCallback(
     ({ editor }: { editor: any }) => {
       const json = editor.getJSON();
@@ -169,29 +165,26 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
 
       // Check for mentions
       if (onMentionChange) {
-        const { from } = editor.state.selection;
-        const mention = getActiveMention(text, from);
+        const mention = detectMention(editor);
         const position = mention ? getCursorPosition(editor) : null;
         onMentionChange(mention, position);
       }
 
       editorRef.current = editor;
     },
-    [onChange, onHTMLChange, onTextChange, onMentionChange, getCursorPosition]
+    [onChange, onHTMLChange, onTextChange, onMentionChange, getCursorPosition, detectMention]
   );
 
   const handleSelectionUpdate = useCallback(
     ({ editor }: { editor: any }) => {
       if (onMentionChange) {
-        const text = editor.getText();
-        const { from } = editor.state.selection;
-        const mention = getActiveMention(text, from);
+        const mention = detectMention(editor);
         const position = mention ? getCursorPosition(editor) : null;
         onMentionChange(mention, position);
       }
       editorRef.current = editor;
     },
-    [onMentionChange, getCursorPosition]
+    [onMentionChange, getCursorPosition, detectMention]
   );
 
   const handleEditorKeyDown = useCallback(
