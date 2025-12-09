@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type MouseEvent,
 } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -51,6 +52,79 @@ function parseTodoText(title: string, description: string): ParsedTodoMeta {
     tags,
     priority,
   }
+}
+
+// Component to render todo description with interactive checkboxes
+function TodoDescription({
+  html,
+  onUpdate,
+  className,
+}: {
+  html: string
+  onUpdate: (newHtml: string) => void
+  className?: string
+}) {
+  const handleClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement
+      
+      // Check if clicked element is a checkbox input within a task list
+      if (
+        target.tagName === 'INPUT' &&
+        target.getAttribute('type') === 'checkbox' &&
+        target.closest('[data-type="taskItem"]')
+      ) {
+        e.preventDefault()
+        
+        // Create a temporary container to parse and modify the HTML
+        const container = document.createElement('div')
+        container.innerHTML = html
+        
+        // Find all checkboxes to determine which one was clicked
+        const checkboxes = container.querySelectorAll(
+          '[data-type="taskItem"] input[type="checkbox"]'
+        )
+        const renderedCheckboxes = (e.currentTarget as HTMLDivElement).querySelectorAll(
+          '[data-type="taskItem"] input[type="checkbox"]'
+        )
+        
+        // Find the index of the clicked checkbox
+        let clickedIndex = -1
+        renderedCheckboxes.forEach((cb, idx) => {
+          if (cb === target) {
+            clickedIndex = idx
+          }
+        })
+        
+        if (clickedIndex >= 0 && checkboxes[clickedIndex]) {
+          const checkbox = checkboxes[clickedIndex] as HTMLInputElement
+          const taskItem = checkbox.closest('[data-type="taskItem"]')
+          
+          // Toggle the checked state
+          const isCurrentlyChecked = checkbox.hasAttribute('checked')
+          
+          if (isCurrentlyChecked) {
+            checkbox.removeAttribute('checked')
+            taskItem?.setAttribute('data-checked', 'false')
+          } else {
+            checkbox.setAttribute('checked', 'checked')
+            taskItem?.setAttribute('data-checked', 'true')
+          }
+          
+          onUpdate(container.innerHTML)
+        }
+      }
+    },
+    [html, onUpdate]
+  )
+
+  return (
+    <div
+      className={className}
+      onClick={handleClick}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  )
 }
 
 export const Route = createFileRoute('/demo/trpc-todo')({
@@ -751,9 +825,10 @@ function TRPCTodos() {
               </div>
 
               {t.description && (
-                <div 
-                  className="text-sm text-white/70 ml-6 prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2"
-                  dangerouslySetInnerHTML={{ __html: t.description }}
+                <TodoDescription
+                  html={t.description}
+                  onUpdate={(newHtml) => updateTodo({ id: t.id, description: newHtml })}
+                  className="text-sm text-white/70 ml-6 prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2 **:data-[type=taskItem]:flex **:data-[type=taskItem]:gap-2 **:data-[type=taskItem]:items-start **:data-[type=taskItem]:*:data-[type=taskItemLabel]:flex-1 [&_input[type=checkbox]]:mt-1 [&_input[type=checkbox]]:cursor-pointer"
                 />
               )}
 
@@ -852,9 +927,10 @@ function TRPCTodos() {
                     </div>
 
                     {t.description && (
-                      <div 
-                        className="text-sm text-white/50 ml-6 line-through prose prose-sm prose-invert max-w-none opacity-50 prose-p:my-1 prose-headings:my-2"
-                        dangerouslySetInnerHTML={{ __html: t.description }}
+                      <TodoDescription
+                        html={t.description}
+                        onUpdate={(newHtml) => updateTodo({ id: t.id, description: newHtml })}
+                        className="text-sm text-white/50 ml-6 line-through prose prose-sm prose-invert max-w-none opacity-50 prose-p:my-1 prose-headings:my-2 **:data-[type=taskItem]:flex **:data-[type=taskItem]:gap-2 **:data-[type=taskItem]:items-start **:data-[type=taskItem]:*:data-[type=taskItemLabel]:flex-1 [&_input[type=checkbox]]:mt-1 [&_input[type=checkbox]]:cursor-pointer"
                       />
                     )}
 
