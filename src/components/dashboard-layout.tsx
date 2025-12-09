@@ -1,9 +1,20 @@
 // src/components/dashboard-layout.tsx
 
+
 import { useState, useEffect, useRef } from 'react'
+import { Plus } from 'lucide-react'
 import { DashboardModuleWrapper } from './dashboard-module'
 import { useDashboard } from '@/hooks/use-dashboard'
 import type { ModuleDefinition } from '@/types/dashboard-types'
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+
 
 export interface DashboardLayoutProps {
   moduleDefinitions: ModuleDefinition[]
@@ -17,12 +28,15 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
     ensureLayoutForColumns,
     layout,
     moveModule,
+    addModule,
   } = useDashboard({ moduleDefinitions })
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [columnCount, setColumnCount] = useState(1)
   const [draggedModuleId, setDraggedModuleId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null) // module or column ID
+  const [addingToColumn, setAddingToColumn] = useState<number | null>(null)
+
 
   // Determine column count based on container width
   useEffect(() => {
@@ -128,7 +142,30 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
     setDraggedModuleId(null)
   }
 
+  const handleMoveUp = (moduleId: string, colIndex: number, index: number) => {
+    if (index === 0) return
+    moveModule(moduleId, colIndex, index, colIndex, index - 1, columnCount)
+  }
+
+  const handleMoveDown = (moduleId: string, colIndex: number, index: number) => {
+    // Check if valid move
+    const currentLayout = layout.layouts[columnCount]
+    if (!currentLayout) return
+    
+    // When moving down, we effectively insert at index+1 (after the next item)
+    // Actually, because we remove first, if we want to swap with next item:
+    // [A, B, C] -> move A down -> remove A -> [B, C] -> insert at 1 -> [B, A, C]
+    // So toIndex = index + 1
+    
+    // Check bounds
+    const colLength = currentLayout.columns[colIndex].length
+    if (index >= colLength - 1) return
+
+    moveModule(moduleId, colIndex, index, colIndex, index + 1, columnCount)
+  }
+
   // Create a map for quick lookup of module definitions
+
   const definitionMap = new Map(
     moduleDefinitions.map((def) => [def.type, def]),
   )
@@ -174,7 +211,7 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
                 handleDropOnColumn(colIndex)
               }}
             >
-              {columnModuleIds.map((moduleId) => {
+              {columnModuleIds.map((moduleId, index) => {
                 const module = moduleMap.get(moduleId)
                 if (!module || !module.visible) return null
                 const definition = definitionMap.get(module.type)
@@ -191,9 +228,12 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
                     onDragEnd={handleDragEnd}
                     onDragOver={handleDragOver}
                     onDrop={() => handleDropOnModule(moduleId, colIndex)}
+                    onMoveUp={() => handleMoveUp(moduleId, colIndex, index)}
+                    onMoveDown={() => handleMoveDown(moduleId, colIndex, index)}
                     isDragging={draggedModuleId === moduleId}
                     isDragOver={dragOverId === moduleId}
                   >
+
                     <div className="max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                        <ModuleComponent
                          moduleId={module.id}
@@ -204,12 +244,22 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
                 )
               })}
               
-              {/* Drop target filler if column is empty */}
-              {columnModuleIds.length === 0 && (
-                 <div className="h-32 border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center text-white/20">
-                    Drop here
-                 </div>
-              )}
+              {/* Add / Drop Zone */}
+              <button
+                onClick={() => setAddingToColumn(colIndex)}
+                className={`
+                  w-full h-24 rounded-xl border-2 border-dashed transition-all duration-200
+                  flex flex-col items-center justify-center gap-2
+                  ${
+                    dragOverId === `col-${colIndex}`
+                      ? 'border-purple-400/50 bg-purple-400/10 text-purple-200'
+                      : 'border-white/10 text-white/20 hover:border-purple-400/30 hover:text-purple-400/60 hover:bg-white/5'
+                  }
+                `}
+              >
+                <Plus className="w-6 h-6" />
+                <span className="text-sm font-medium">Tap to add</span>
+              </button>
             </div>
           ))}
         </div>
@@ -220,7 +270,37 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
              <p className="text-white/40">Loading layout...</p>
           </div>
         )}
+
+        <CommandDialog 
+          open={addingToColumn !== null} 
+          onOpenChange={(open) => !open && setAddingToColumn(null)}
+        >
+          <CommandInput placeholder="Search modules..." />
+          <CommandList>
+            <CommandEmpty>No modules found.</CommandEmpty>
+            <CommandGroup heading="Available Modules">
+              {moduleDefinitions.map((def) => (
+                <CommandItem
+                  key={def.type}
+                  onSelect={() => {
+                    if (addingToColumn !== null) {
+                      addModule(def.type, addingToColumn, columnCount)
+                      setAddingToColumn(null)
+                    }
+                  }}
+                  className="cursor-pointer"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">{def.name}</span>
+                    <span className="text-xs text-muted-foreground">{def.description}</span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </CommandDialog>
       </div>
     </div>
   )
 }
+

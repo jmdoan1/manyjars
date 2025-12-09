@@ -222,6 +222,41 @@ export function useDashboard({ moduleDefinitions }: UseDashboardOptions) {
     [],
   )
 
+  const addModule = useCallback((type: string, targetColIndex: number, columnCount: number) => {
+    setLayout((prev) => {
+      const newModuleId = `${type}-${Date.now()}`
+      const newModule = {
+        id: newModuleId,
+        type,
+        visible: true,
+        config: {},
+      }
+
+      // Add to modules list
+      const newModules = [...prev.modules, newModule]
+
+      // Add to layout
+      const currentLayout = prev.layouts[columnCount]
+      let newLayouts = { ...prev.layouts }
+
+      if (currentLayout) {
+         const newColumns = currentLayout.columns.map((col, index) => {
+            if (index === targetColIndex) {
+              return [...col, newModuleId]
+            }
+            return [...col]
+         })
+         newLayouts[columnCount] = { columns: newColumns }
+      }
+
+      return {
+        ...prev,
+        modules: newModules,
+        layouts: newLayouts,
+      }
+    })
+  }, [])
+
   const resetLayout = useCallback(() => {
     const defaultModules = moduleDefinitions.map((def, index) => ({
       id: `${def.type}-${Date.now()}-${index}`,
@@ -245,5 +280,6 @@ export function useDashboard({ moduleDefinitions }: UseDashboardOptions) {
     // New Actions
     ensureLayoutForColumns,
     moveModule,
+    addModule, // Export new function
   }
 }
