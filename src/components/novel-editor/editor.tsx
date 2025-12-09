@@ -123,41 +123,16 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
       const editor = editorRef.current;
       if (!editor) return;
       
-      // In ProseMirror, positions are 1-indexed from the start of the document
-      // and account for node boundaries. For plain text offsets, we need to
-      // calculate the actual ProseMirror positions.
-      const doc = editor.state.doc;
-      let charCount = 0;
-      let startPos = 0;
-      let endPos = 0;
+      // ProseMirror positions are offset by 1 for the opening paragraph tag
+      // So text position 0 is ProseMirror position 1
+      const pmStart = start + 1;
+      const pmEnd = end + 1;
       
-      doc.descendants((node: any, nodePos: number) => {
-        if (node.isText) {
-          const textStart = charCount;
-          const textEnd = charCount + node.text.length;
-          
-          if (start >= textStart && start <= textEnd && startPos === 0) {
-            startPos = nodePos + (start - textStart);
-          }
-          if (end >= textStart && end <= textEnd && endPos === 0) {
-            endPos = nodePos + (end - textStart);
-          }
-          
-          charCount += node.text.length;
-        } else if (node.isBlock && charCount > 0) {
-          // Account for newlines between blocks
-          charCount += 1;
-        }
-        return true;
-      });
-      
-      if (startPos > 0 && endPos > 0) {
-        editor.chain()
-          .focus()
-          .deleteRange({ from: startPos, to: endPos })
-          .insertContent(replacement)
-          .run();
-      }
+      editor.chain()
+        .focus()
+        .deleteRange({ from: pmStart, to: pmEnd })
+        .insertContent(replacement)
+        .run();
     },
     focus: () => {
       editorRef.current?.commands?.focus();
@@ -219,13 +194,12 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
     [onMentionChange, getCursorPosition]
   );
 
-  const handleKeyDown = useCallback(
+  const handleEditorKeyDown = useCallback(
     (_view: any, event: KeyboardEvent) => {
       // Let parent handle keyboard events first
       if (onKeyDown) {
         const handled = onKeyDown(event);
         if (handled) {
-          event.preventDefault();
           return true;
         }
       }
@@ -243,9 +217,7 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
           extensions={extensions}
           className={`min-h-[100px] w-full rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white overflow-hidden ${editorClassName}`}
           editorProps={{
-            handleDOMEvents: {
-              keydown: handleKeyDown,
-            },
+            handleKeyDown: handleEditorKeyDown,
             attributes: {
               class:
                 "prose prose-invert prose-sm sm:prose-base max-w-full focus:outline-none px-4 py-3 min-h-[100px] prose-headings:text-white prose-p:text-white/90 prose-strong:text-white prose-em:text-white/90 prose-code:text-blue-300 prose-blockquote:text-white/80 prose-li:text-white/90",

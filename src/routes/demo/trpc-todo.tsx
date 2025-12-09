@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -442,41 +443,45 @@ function TRPCTodos() {
         option: PriorityOption
       }
 
-  const rows: Row[] = []
+  const rows: Row[] = useMemo(() => {
+    const result: Row[] = []
 
-  if (currentMention) {
-    if (currentMention.type === 'priority') {
-      const q = query.toLowerCase()
-      let opts = PRIORITY_OPTIONS
-      if (q) {
-        opts = opts.filter(
-          (opt) =>
-            opt.label.toLowerCase().includes(q) ||
-            opt.token.startsWith(q),
-        )
-      }
-      for (const opt of opts) {
-        rows.push({ kind: 'priority', option: opt })
-      }
-    } else {
-      // jar/tag: typed option first (if any), then suggestions
-      if (query) {
-        const prefix =
-          currentMention.type === 'jar' ? '@' : '#'
-        rows.push({
-          kind: 'typed',
-          label: `${prefix}${query}`,
-          description:
-            currentMention.type === 'jar'
-              ? 'Use this as a new jar'
-              : 'Use this as a new tag',
-        })
-      }
-      for (const item of filteredJarOrTag) {
-        rows.push({ kind: 'suggestion', item })
+    if (currentMention) {
+      if (currentMention.type === 'priority') {
+        const q = query.toLowerCase()
+        let opts = PRIORITY_OPTIONS
+        if (q) {
+          opts = opts.filter(
+            (opt) =>
+              opt.label.toLowerCase().includes(q) ||
+              opt.token.startsWith(q),
+          )
+        }
+        for (const opt of opts) {
+          result.push({ kind: 'priority', option: opt })
+        }
+      } else {
+        // jar/tag: typed option first (if any), then suggestions
+        if (query) {
+          const prefix =
+            currentMention.type === 'jar' ? '@' : '#'
+          result.push({
+            kind: 'typed',
+            label: `${prefix}${query}`,
+            description:
+              currentMention.type === 'jar'
+                ? 'Use this as a new jar'
+                : 'Use this as a new tag',
+          })
+        }
+        for (const item of filteredJarOrTag) {
+          result.push({ kind: 'suggestion', item })
+        }
       }
     }
-  }
+
+    return result
+  }, [currentMention, query, filteredJarOrTag])
 
   useEffect(() => {
     if ((activeMention || descMention) && rows.length > 0) {
