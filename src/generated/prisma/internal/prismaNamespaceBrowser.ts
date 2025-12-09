@@ -54,7 +54,10 @@ export const ModelName = {
   User: 'User',
   Todo: 'Todo',
   Jar: 'Jar',
-  Tag: 'Tag'
+  Tag: 'Tag',
+  JarLink: 'JarLink',
+  TagLink: 'TagLink',
+  JarTagLink: 'JarTagLink'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -122,6 +125,36 @@ export const TagScalarFieldEnum = {
 } as const
 
 export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const JarLinkScalarFieldEnum = {
+  id: 'id',
+  sourceJarId: 'sourceJarId',
+  targetJarId: 'targetJarId',
+  createdAt: 'createdAt'
+} as const
+
+export type JarLinkScalarFieldEnum = (typeof JarLinkScalarFieldEnum)[keyof typeof JarLinkScalarFieldEnum]
+
+
+export const TagLinkScalarFieldEnum = {
+  id: 'id',
+  sourceTagId: 'sourceTagId',
+  targetTagId: 'targetTagId',
+  createdAt: 'createdAt'
+} as const
+
+export type TagLinkScalarFieldEnum = (typeof TagLinkScalarFieldEnum)[keyof typeof TagLinkScalarFieldEnum]
+
+
+export const JarTagLinkScalarFieldEnum = {
+  id: 'id',
+  jarId: 'jarId',
+  tagId: 'tagId',
+  createdAt: 'createdAt'
+} as const
+
+export type JarTagLinkScalarFieldEnum = (typeof JarTagLinkScalarFieldEnum)[keyof typeof JarTagLinkScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -55,6 +55,13 @@ model Jar {
 
   todos Todo[] @relation("TodoJars")
 
+  // Many-to-many self-references (jars mentioned in this jar's description)
+  linkedJars     JarLink[] @relation("SourceJar")
+  referencedBy   JarLink[] @relation("TargetJar")
+  
+  // Cross-references with tags
+  linkedTags     JarTagLink[] @relation("JarToTag")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -71,8 +78,59 @@ model Tag {
 
   todos Todo[] @relation("TodoTags")
 
+  // Many-to-many self-references (tags mentioned in this tag's description)
+  linkedTags     TagLink[] @relation("SourceTag")
+  referencedBy   TagLink[] @relation("TargetTag")
+  
+  // Cross-references with jars
+  linkedJars     JarTagLink[] @relation("TagToJar")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, name])
+}
+
+// Link tables for many-to-many relationships
+
+model JarLink {
+  id          String   @id @default(uuid())
+  
+  sourceJarId String
+  sourceJar   Jar      @relation("SourceJar", fields: [sourceJarId], references: [id], onDelete: Cascade)
+  
+  targetJarId String
+  targetJar   Jar      @relation("TargetJar", fields: [targetJarId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+
+  @@unique([sourceJarId, targetJarId])
+}
+
+model TagLink {
+  id          String   @id @default(uuid())
+  
+  sourceTagId String
+  sourceTag   Tag      @relation("SourceTag", fields: [sourceTagId], references: [id], onDelete: Cascade)
+  
+  targetTagId String
+  targetTag   Tag      @relation("TargetTag", fields: [targetTagId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+
+  @@unique([sourceTagId, targetTagId])
+}
+
+model JarTagLink {
+  id        String   @id @default(uuid())
+  
+  jarId     String
+  jar       Jar      @relation("JarToTag", fields: [jarId], references: [id], onDelete: Cascade)
+  
+  tagId     String
+  tag       Tag      @relation("TagToJar", fields: [tagId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([jarId, tagId])
 }

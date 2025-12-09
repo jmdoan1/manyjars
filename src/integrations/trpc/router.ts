@@ -3,6 +3,7 @@ import type { TRPCRouterRecord } from '@trpc/server'
 
 import { createTRPCRouter, protectedProcedure } from './init'
 import { prisma } from '@/db'
+import { parseMentions, validateJarTagName } from '@/hooks/use-mentions'
 
 const todoBaseInclude = {
   jars: true,
@@ -219,6 +220,10 @@ const jarsRouter = {
     return prisma.jar.findMany({
       where: { userId: ctx.user.id },
       orderBy: { name: 'asc' },
+      include: {
+        linkedJars: { include: { targetJar: true } },
+        linkedTags: { include: { tag: true } },
+      },
     })
   }),
   create: protectedProcedure
@@ -229,13 +234,123 @@ const jarsRouter = {
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      return prisma.jar.create({
+      // Validate name format
+      if (!validateJarTagName(input.name)) {
+        throw new Error('Jar name must contain only alphanumeric characters, hyphens, and underscores')
+      }
+
+      const jar = await prisma.jar.create({
         data: {
           name: input.name,
           description: input.description,
           userId: ctx.user.id,
         },
       })
+
+      // Parse mentions from description and create links
+      if (input.description) {
+        const { jars, tags } = parseMentions(input.description)
+        
+        // Link to mentioned jars
+        if (jars.length > 0) {
+          const targetJars = await prisma.jar.findMany({
+            where: { userId: ctx.user.id, name: { in: jars } },
+          })
+          await prisma.jarLink.createMany({
+            data: targetJars.map(target => ({
+              sourceJarId: jar.id,
+              targetJarId: target.id,
+            })),
+            skipDuplicates: true,
+          })
+        }
+
+        // Link to mentioned tags
+        if (tags.length > 0) {
+          const targetTags = await prisma.tag.findMany({
+            where: { userId: ctx.user.id, name: { in: tags } },
+          })
+          await prisma.jarTagLink.createMany({
+            data: targetTags.map(target => ({
+              jarId: jar.id,
+              tagId: target.id,
+            })),
+            skipDuplicates: true,
+          })
+        }
+      }
+
+      return jar
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).optional(),
+        description: z.string().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, name, description, ...rest } = input
+
+      // Validate name format if provided
+      if (name && !validateJarTagName(name)) {
+        throw new Error('Jar name must contain only alphanumeric characters, hyphens, and underscores')
+      }
+
+      // Update jar
+      const jar = await prisma.jar.update({
+        where: { id, userId: ctx.user.id },
+        data: { name, description, ...rest },
+      })
+
+      // Re-sync links if description changed
+      if (description !== undefined) {
+        // Delete existing links
+        await prisma.jarLink.deleteMany({ where: { sourceJarId: id } })
+        await prisma.jarTagLink.deleteMany({ where: { jarId: id } })
+
+        // Create new links from updated description
+        if (description) {
+          const { jars, tags } = parseMentions(description)
+          
+          if (jars.length > 0) {
+            const targetJars = await prisma.jar.findMany({
+              where: { userId: ctx.user.id, name: { in: jars } },
+            })
+            await prisma.jarLink.createMany({
+              data: targetJars.map(target => ({
+                sourceJarId: jar.id,
+                targetJarId: target.id,
+              })),
+              skipDuplicates: true,
+            })
+          }
+
+          if (tags.length > 0) {
+            const targetTags = await prisma.tag.findMany({
+              where: { userId: ctx.user.id, name: { in: tags } },
+            })
+            await prisma.jarTagLink.createMany({
+              data: targetTags.map(target => ({
+                jarId: jar.id,
+                tagId: target.id,
+              })),
+              skipDuplicates: true,
+            })
+          }
+        }
+      }
+
+      return jar
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      await prisma.jar.delete({
+        where: { id: input.id, userId: ctx.user.id },
+      })
+      return { success: true }
     }),
 } satisfies TRPCRouterRecord
 
@@ -244,6 +359,10 @@ const tagsRouter = {
     return prisma.tag.findMany({
       where: { userId: ctx.user.id },
       orderBy: { name: 'asc' },
+      include: {
+        linkedTags: { include: { targetTag: true } },
+        linkedJars: { include: { jar: true } },
+      },
     })
   }),
   create: protectedProcedure
@@ -254,13 +373,123 @@ const tagsRouter = {
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      return prisma.tag.create({
+      // Validate name format
+      if (!validateJarTagName(input.name)) {
+        throw new Error('Tag name must contain only alphanumeric characters, hyphens, and underscores')
+      }
+
+      const tag = await prisma.tag.create({
         data: {
           name: input.name,
           description: input.description,
           userId: ctx.user.id,
         },
       })
+
+      // Parse mentions from description and create links
+      if (input.description) {
+        const { jars, tags } = parseMentions(input.description)
+        
+        // Link to mentioned jars
+        if (jars.length > 0) {
+          const targetJars = await prisma.jar.findMany({
+            where: { userId: ctx.user.id, name: { in: jars } },
+          })
+          await prisma.jarTagLink.createMany({
+            data: targetJars.map(target => ({
+              tagId: tag.id,
+              jarId: target.id,
+            })),
+            skipDuplicates: true,
+          })
+        }
+
+        // Link to mentioned tags
+        if (tags.length > 0) {
+          const targetTags = await prisma.tag.findMany({
+            where: { userId: ctx.user.id, name: { in: tags } },
+          })
+          await prisma.tagLink.createMany({
+            data: targetTags.map(target => ({
+              sourceTagId: tag.id,
+              targetTagId: target.id,
+            })),
+            skipDuplicates: true,
+          })
+        }
+      }
+
+      return tag
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).optional(),
+        description: z.string().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, name, description, ...rest } = input
+
+      // Validate name format if provided
+      if (name && !validateJarTagName(name)) {
+        throw new Error('Tag name must contain only alphanumeric characters, hyphens, and underscores')
+      }
+
+      // Update tag
+      const tag = await prisma.tag.update({
+        where: { id, userId: ctx.user.id },
+        data: { name, description, ...rest },
+      })
+
+      // Re-sync links if description changed
+      if (description !== undefined) {
+        // Delete existing links
+        await prisma.tagLink.deleteMany({ where: { sourceTagId: id } })
+        await prisma.jarTagLink.deleteMany({ where: { tagId: id } })
+
+        // Create new links from updated description
+        if (description) {
+          const { jars, tags } = parseMentions(description)
+          
+          if (jars.length > 0) {
+            const targetJars = await prisma.jar.findMany({
+              where: { userId: ctx.user.id, name: { in: jars } },
+            })
+            await prisma.jarTagLink.createMany({
+              data: targetJars.map(target => ({
+                tagId: tag.id,
+                jarId: target.id,
+              })),
+              skipDuplicates: true,
+            })
+          }
+
+          if (tags.length > 0) {
+            const targetTags = await prisma.tag.findMany({
+              where: { userId: ctx.user.id, name: { in: tags } },
+            })
+            await prisma.tagLink.createMany({
+              data: targetTags.map(target => ({
+                sourceTagId: tag.id,
+                targetTagId: target.id,
+              })),
+              skipDuplicates: true,
+            })
+          }
+        }
+      }
+
+      return tag
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      await prisma.tag.delete({
+        where: { id: input.id, userId: ctx.user.id },
+      })
+      return { success: true }
     }),
 } satisfies TRPCRouterRecord
 

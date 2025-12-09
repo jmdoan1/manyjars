@@ -387,7 +387,10 @@ export const ModelName = {
   User: 'User',
   Todo: 'Todo',
   Jar: 'Jar',
-  Tag: 'Tag'
+  Tag: 'Tag',
+  JarLink: 'JarLink',
+  TagLink: 'TagLink',
+  JarTagLink: 'JarTagLink'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "todo" | "jar" | "tag"
+    modelProps: "user" | "todo" | "jar" | "tag" | "jarLink" | "tagLink" | "jarTagLink"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +706,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    JarLink: {
+      payload: Prisma.$JarLinkPayload<ExtArgs>
+      fields: Prisma.JarLinkFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.JarLinkFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.JarLinkFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>
+        }
+        findFirst: {
+          args: Prisma.JarLinkFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.JarLinkFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>
+        }
+        findMany: {
+          args: Prisma.JarLinkFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>[]
+        }
+        create: {
+          args: Prisma.JarLinkCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>
+        }
+        createMany: {
+          args: Prisma.JarLinkCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.JarLinkCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>[]
+        }
+        delete: {
+          args: Prisma.JarLinkDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>
+        }
+        update: {
+          args: Prisma.JarLinkUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>
+        }
+        deleteMany: {
+          args: Prisma.JarLinkDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.JarLinkUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.JarLinkUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>[]
+        }
+        upsert: {
+          args: Prisma.JarLinkUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarLinkPayload>
+        }
+        aggregate: {
+          args: Prisma.JarLinkAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateJarLink>
+        }
+        groupBy: {
+          args: Prisma.JarLinkGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JarLinkGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.JarLinkCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JarLinkCountAggregateOutputType> | number
+        }
+      }
+    }
+    TagLink: {
+      payload: Prisma.$TagLinkPayload<ExtArgs>
+      fields: Prisma.TagLinkFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TagLinkFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TagLinkFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>
+        }
+        findFirst: {
+          args: Prisma.TagLinkFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TagLinkFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>
+        }
+        findMany: {
+          args: Prisma.TagLinkFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>[]
+        }
+        create: {
+          args: Prisma.TagLinkCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>
+        }
+        createMany: {
+          args: Prisma.TagLinkCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TagLinkCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>[]
+        }
+        delete: {
+          args: Prisma.TagLinkDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>
+        }
+        update: {
+          args: Prisma.TagLinkUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>
+        }
+        deleteMany: {
+          args: Prisma.TagLinkDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TagLinkUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TagLinkUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>[]
+        }
+        upsert: {
+          args: Prisma.TagLinkUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagLinkPayload>
+        }
+        aggregate: {
+          args: Prisma.TagLinkAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTagLink>
+        }
+        groupBy: {
+          args: Prisma.TagLinkGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TagLinkGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TagLinkCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TagLinkCountAggregateOutputType> | number
+        }
+      }
+    }
+    JarTagLink: {
+      payload: Prisma.$JarTagLinkPayload<ExtArgs>
+      fields: Prisma.JarTagLinkFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.JarTagLinkFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.JarTagLinkFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>
+        }
+        findFirst: {
+          args: Prisma.JarTagLinkFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.JarTagLinkFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>
+        }
+        findMany: {
+          args: Prisma.JarTagLinkFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>[]
+        }
+        create: {
+          args: Prisma.JarTagLinkCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>
+        }
+        createMany: {
+          args: Prisma.JarTagLinkCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.JarTagLinkCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>[]
+        }
+        delete: {
+          args: Prisma.JarTagLinkDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>
+        }
+        update: {
+          args: Prisma.JarTagLinkUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>
+        }
+        deleteMany: {
+          args: Prisma.JarTagLinkDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.JarTagLinkUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.JarTagLinkUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>[]
+        }
+        upsert: {
+          args: Prisma.JarTagLinkUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$JarTagLinkPayload>
+        }
+        aggregate: {
+          args: Prisma.JarTagLinkAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateJarTagLink>
+        }
+        groupBy: {
+          args: Prisma.JarTagLinkGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JarTagLinkGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.JarTagLinkCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.JarTagLinkCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -791,6 +1016,36 @@ export const TagScalarFieldEnum = {
 } as const
 
 export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const JarLinkScalarFieldEnum = {
+  id: 'id',
+  sourceJarId: 'sourceJarId',
+  targetJarId: 'targetJarId',
+  createdAt: 'createdAt'
+} as const
+
+export type JarLinkScalarFieldEnum = (typeof JarLinkScalarFieldEnum)[keyof typeof JarLinkScalarFieldEnum]
+
+
+export const TagLinkScalarFieldEnum = {
+  id: 'id',
+  sourceTagId: 'sourceTagId',
+  targetTagId: 'targetTagId',
+  createdAt: 'createdAt'
+} as const
+
+export type TagLinkScalarFieldEnum = (typeof TagLinkScalarFieldEnum)[keyof typeof TagLinkScalarFieldEnum]
+
+
+export const JarTagLinkScalarFieldEnum = {
+  id: 'id',
+  jarId: 'jarId',
+  tagId: 'tagId',
+  createdAt: 'createdAt'
+} as const
+
+export type JarTagLinkScalarFieldEnum = (typeof JarTagLinkScalarFieldEnum)[keyof typeof JarTagLinkScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -977,6 +1232,9 @@ export type GlobalOmitConfig = {
   todo?: Prisma.TodoOmit
   jar?: Prisma.JarOmit
   tag?: Prisma.TagOmit
+  jarLink?: Prisma.JarLinkOmit
+  tagLink?: Prisma.TagLinkOmit
+  jarTagLink?: Prisma.JarTagLinkOmit
 }
 
 /* Types for Logging */

@@ -171,6 +171,15 @@ export function parseMentions(text: string): {
 }
 
 /**
+ * Validates a jar or tag name to ensure it only contains
+ * alphanumeric characters, hyphens, and underscores.
+ */
+export function validateJarTagName(name: string): boolean {
+  if (!name || name.length === 0) return false
+  return /^[a-zA-Z0-9_-]+$/.test(name)
+}
+
+/**
  * Strips priority tokens from text (for cleaned display/storage).
  */
 export function stripPriorityTokens(text: string): string {

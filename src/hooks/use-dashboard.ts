@@ -7,7 +7,7 @@ import type {
 } from '@/types/dashboard-types'
 
 const STORAGE_KEY = 'manyjar-dashboard-layout'
-const LAYOUT_VERSION = 1
+const LAYOUT_VERSION = 2 // Incremented to show new Jars and Tags modules
 
 /**
  * Load dashboard layout from localStorage

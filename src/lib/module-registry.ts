@@ -1,7 +1,9 @@
 // src/lib/module-registry.ts
 
-import { CheckSquare } from 'lucide-react'
+import { CheckSquare, Archive, Hash } from 'lucide-react'
 import { TodosModule } from '@/components/modules/todos-module'
+import { JarsModule } from '@/components/modules/jars-module'
+import { TagsModule } from '@/components/modules/tags-module'
 import type { ModuleDefinition } from '@/types/dashboard-types'
 
 /**
@@ -14,6 +16,28 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     description: 'Manage your tasks with jars, tags, and priorities',
     icon: CheckSquare,
     component: TodosModule,
+    defaultSize: {
+      width: 1,
+      height: 1,
+    },
+  },
+  {
+    type: 'jars',
+    name: 'Jars',
+    description: 'Manage your jars with rich descriptions',
+    icon: Archive,
+    component: JarsModule,
+    defaultSize: {
+      width: 1,
+      height: 1,
+    },
+  },
+  {
+    type: 'tags',
+    name: 'Tags',
+    description: 'Manage your tags with rich descriptions',
+    icon: Hash,
+    component: TagsModule,
     defaultSize: {
       width: 1,
       height: 1,

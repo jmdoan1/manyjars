@@ -192,6 +192,9 @@ export type TagWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   todos?: Prisma.TodoListRelationFilter
+  linkedTags?: Prisma.TagLinkListRelationFilter
+  referencedBy?: Prisma.TagLinkListRelationFilter
+  linkedJars?: Prisma.JarTagLinkListRelationFilter
 }
 
 export type TagOrderByWithRelationInput = {
@@ -203,6 +206,9 @@ export type TagOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   todos?: Prisma.TodoOrderByRelationAggregateInput
+  linkedTags?: Prisma.TagLinkOrderByRelationAggregateInput
+  referencedBy?: Prisma.TagLinkOrderByRelationAggregateInput
+  linkedJars?: Prisma.JarTagLinkOrderByRelationAggregateInput
 }
 
 export type TagWhereUniqueInput = Prisma.AtLeast<{
@@ -218,6 +224,9 @@ export type TagWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   todos?: Prisma.TodoListRelationFilter
+  linkedTags?: Prisma.TagLinkListRelationFilter
+  referencedBy?: Prisma.TagLinkListRelationFilter
+  linkedJars?: Prisma.JarTagLinkListRelationFilter
 }, "id" | "userId_name">
 
 export type TagOrderByWithAggregationInput = {
@@ -252,6 +261,9 @@ export type TagCreateInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTagsInput
   todos?: Prisma.TodoCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateInput = {
@@ -262,6 +274,9 @@ export type TagUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkUncheckedCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkUncheckedCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagUpdateInput = {
@@ -272,6 +287,9 @@ export type TagUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTagsNestedInput
   todos?: Prisma.TodoUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateInput = {
@@ -282,6 +300,9 @@ export type TagUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUncheckedUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUncheckedUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagCreateManyInput = {
@@ -350,6 +371,11 @@ export type TagMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type TagScalarRelationFilter = {
+  is?: Prisma.TagWhereInput
+  isNot?: Prisma.TagWhereInput
 }
 
 export type TagCreateNestedManyWithoutUserInput = {
@@ -432,6 +458,48 @@ export type TagUncheckedUpdateManyWithoutTodosNestedInput = {
   deleteMany?: Prisma.TagScalarWhereInput | Prisma.TagScalarWhereInput[]
 }
 
+export type TagCreateNestedOneWithoutLinkedTagsInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutLinkedTagsInput, Prisma.TagUncheckedCreateWithoutLinkedTagsInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutLinkedTagsInput
+  connect?: Prisma.TagWhereUniqueInput
+}
+
+export type TagCreateNestedOneWithoutReferencedByInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutReferencedByInput, Prisma.TagUncheckedCreateWithoutReferencedByInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutReferencedByInput
+  connect?: Prisma.TagWhereUniqueInput
+}
+
+export type TagUpdateOneRequiredWithoutLinkedTagsNestedInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutLinkedTagsInput, Prisma.TagUncheckedCreateWithoutLinkedTagsInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutLinkedTagsInput
+  upsert?: Prisma.TagUpsertWithoutLinkedTagsInput
+  connect?: Prisma.TagWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TagUpdateToOneWithWhereWithoutLinkedTagsInput, Prisma.TagUpdateWithoutLinkedTagsInput>, Prisma.TagUncheckedUpdateWithoutLinkedTagsInput>
+}
+
+export type TagUpdateOneRequiredWithoutReferencedByNestedInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutReferencedByInput, Prisma.TagUncheckedCreateWithoutReferencedByInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutReferencedByInput
+  upsert?: Prisma.TagUpsertWithoutReferencedByInput
+  connect?: Prisma.TagWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TagUpdateToOneWithWhereWithoutReferencedByInput, Prisma.TagUpdateWithoutReferencedByInput>, Prisma.TagUncheckedUpdateWithoutReferencedByInput>
+}
+
+export type TagCreateNestedOneWithoutLinkedJarsInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutLinkedJarsInput, Prisma.TagUncheckedCreateWithoutLinkedJarsInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutLinkedJarsInput
+  connect?: Prisma.TagWhereUniqueInput
+}
+
+export type TagUpdateOneRequiredWithoutLinkedJarsNestedInput = {
+  create?: Prisma.XOR<Prisma.TagCreateWithoutLinkedJarsInput, Prisma.TagUncheckedCreateWithoutLinkedJarsInput>
+  connectOrCreate?: Prisma.TagCreateOrConnectWithoutLinkedJarsInput
+  upsert?: Prisma.TagUpsertWithoutLinkedJarsInput
+  connect?: Prisma.TagWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TagUpdateToOneWithWhereWithoutLinkedJarsInput, Prisma.TagUpdateWithoutLinkedJarsInput>, Prisma.TagUncheckedUpdateWithoutLinkedJarsInput>
+}
+
 export type TagCreateWithoutUserInput = {
   id?: string
   name: string
@@ -439,6 +507,9 @@ export type TagCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateWithoutUserInput = {
@@ -448,6 +519,9 @@ export type TagUncheckedCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkUncheckedCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkUncheckedCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagCreateOrConnectWithoutUserInput = {
@@ -495,6 +569,9 @@ export type TagCreateWithoutTodosInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTagsInput
+  linkedTags?: Prisma.TagLinkCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkCreateNestedManyWithoutTagInput
 }
 
 export type TagUncheckedCreateWithoutTodosInput = {
@@ -504,6 +581,9 @@ export type TagUncheckedCreateWithoutTodosInput = {
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  linkedTags?: Prisma.TagLinkUncheckedCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkUncheckedCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type TagCreateOrConnectWithoutTodosInput = {
@@ -527,6 +607,198 @@ export type TagUpdateManyWithWhereWithoutTodosInput = {
   data: Prisma.XOR<Prisma.TagUpdateManyMutationInput, Prisma.TagUncheckedUpdateManyWithoutTodosInput>
 }
 
+export type TagCreateWithoutLinkedTagsInput = {
+  id?: string
+  name: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTagsInput
+  todos?: Prisma.TodoCreateNestedManyWithoutTagsInput
+  referencedBy?: Prisma.TagLinkCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkCreateNestedManyWithoutTagInput
+}
+
+export type TagUncheckedCreateWithoutLinkedTagsInput = {
+  id?: string
+  name: string
+  description?: string | null
+  userId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  todos?: Prisma.TodoUncheckedCreateNestedManyWithoutTagsInput
+  referencedBy?: Prisma.TagLinkUncheckedCreateNestedManyWithoutTargetTagInput
+  linkedJars?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutTagInput
+}
+
+export type TagCreateOrConnectWithoutLinkedTagsInput = {
+  where: Prisma.TagWhereUniqueInput
+  create: Prisma.XOR<Prisma.TagCreateWithoutLinkedTagsInput, Prisma.TagUncheckedCreateWithoutLinkedTagsInput>
+}
+
+export type TagCreateWithoutReferencedByInput = {
+  id?: string
+  name: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTagsInput
+  todos?: Prisma.TodoCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkCreateNestedManyWithoutSourceTagInput
+  linkedJars?: Prisma.JarTagLinkCreateNestedManyWithoutTagInput
+}
+
+export type TagUncheckedCreateWithoutReferencedByInput = {
+  id?: string
+  name: string
+  description?: string | null
+  userId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  todos?: Prisma.TodoUncheckedCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkUncheckedCreateNestedManyWithoutSourceTagInput
+  linkedJars?: Prisma.JarTagLinkUncheckedCreateNestedManyWithoutTagInput
+}
+
+export type TagCreateOrConnectWithoutReferencedByInput = {
+  where: Prisma.TagWhereUniqueInput
+  create: Prisma.XOR<Prisma.TagCreateWithoutReferencedByInput, Prisma.TagUncheckedCreateWithoutReferencedByInput>
+}
+
+export type TagUpsertWithoutLinkedTagsInput = {
+  update: Prisma.XOR<Prisma.TagUpdateWithoutLinkedTagsInput, Prisma.TagUncheckedUpdateWithoutLinkedTagsInput>
+  create: Prisma.XOR<Prisma.TagCreateWithoutLinkedTagsInput, Prisma.TagUncheckedCreateWithoutLinkedTagsInput>
+  where?: Prisma.TagWhereInput
+}
+
+export type TagUpdateToOneWithWhereWithoutLinkedTagsInput = {
+  where?: Prisma.TagWhereInput
+  data: Prisma.XOR<Prisma.TagUpdateWithoutLinkedTagsInput, Prisma.TagUncheckedUpdateWithoutLinkedTagsInput>
+}
+
+export type TagUpdateWithoutLinkedTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTagsNestedInput
+  todos?: Prisma.TodoUpdateManyWithoutTagsNestedInput
+  referencedBy?: Prisma.TagLinkUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUpdateManyWithoutTagNestedInput
+}
+
+export type TagUncheckedUpdateWithoutLinkedTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  todos?: Prisma.TodoUncheckedUpdateManyWithoutTagsNestedInput
+  referencedBy?: Prisma.TagLinkUncheckedUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUncheckedUpdateManyWithoutTagNestedInput
+}
+
+export type TagUpsertWithoutReferencedByInput = {
+  update: Prisma.XOR<Prisma.TagUpdateWithoutReferencedByInput, Prisma.TagUncheckedUpdateWithoutReferencedByInput>
+  create: Prisma.XOR<Prisma.TagCreateWithoutReferencedByInput, Prisma.TagUncheckedCreateWithoutReferencedByInput>
+  where?: Prisma.TagWhereInput
+}
+
+export type TagUpdateToOneWithWhereWithoutReferencedByInput = {
+  where?: Prisma.TagWhereInput
+  data: Prisma.XOR<Prisma.TagUpdateWithoutReferencedByInput, Prisma.TagUncheckedUpdateWithoutReferencedByInput>
+}
+
+export type TagUpdateWithoutReferencedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTagsNestedInput
+  todos?: Prisma.TodoUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUpdateManyWithoutSourceTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUpdateManyWithoutTagNestedInput
+}
+
+export type TagUncheckedUpdateWithoutReferencedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  todos?: Prisma.TodoUncheckedUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUncheckedUpdateManyWithoutSourceTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUncheckedUpdateManyWithoutTagNestedInput
+}
+
+export type TagCreateWithoutLinkedJarsInput = {
+  id?: string
+  name: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutTagsInput
+  todos?: Prisma.TodoCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkCreateNestedManyWithoutTargetTagInput
+}
+
+export type TagUncheckedCreateWithoutLinkedJarsInput = {
+  id?: string
+  name: string
+  description?: string | null
+  userId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  todos?: Prisma.TodoUncheckedCreateNestedManyWithoutTagsInput
+  linkedTags?: Prisma.TagLinkUncheckedCreateNestedManyWithoutSourceTagInput
+  referencedBy?: Prisma.TagLinkUncheckedCreateNestedManyWithoutTargetTagInput
+}
+
+export type TagCreateOrConnectWithoutLinkedJarsInput = {
+  where: Prisma.TagWhereUniqueInput
+  create: Prisma.XOR<Prisma.TagCreateWithoutLinkedJarsInput, Prisma.TagUncheckedCreateWithoutLinkedJarsInput>
+}
+
+export type TagUpsertWithoutLinkedJarsInput = {
+  update: Prisma.XOR<Prisma.TagUpdateWithoutLinkedJarsInput, Prisma.TagUncheckedUpdateWithoutLinkedJarsInput>
+  create: Prisma.XOR<Prisma.TagCreateWithoutLinkedJarsInput, Prisma.TagUncheckedCreateWithoutLinkedJarsInput>
+  where?: Prisma.TagWhereInput
+}
+
+export type TagUpdateToOneWithWhereWithoutLinkedJarsInput = {
+  where?: Prisma.TagWhereInput
+  data: Prisma.XOR<Prisma.TagUpdateWithoutLinkedJarsInput, Prisma.TagUncheckedUpdateWithoutLinkedJarsInput>
+}
+
+export type TagUpdateWithoutLinkedJarsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutTagsNestedInput
+  todos?: Prisma.TodoUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUpdateManyWithoutTargetTagNestedInput
+}
+
+export type TagUncheckedUpdateWithoutLinkedJarsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  todos?: Prisma.TodoUncheckedUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUncheckedUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUncheckedUpdateManyWithoutTargetTagNestedInput
+}
+
 export type TagCreateManyUserInput = {
   id?: string
   name: string
@@ -542,6 +814,9 @@ export type TagUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateWithoutUserInput = {
@@ -551,6 +826,9 @@ export type TagUncheckedUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUncheckedUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUncheckedUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateManyWithoutUserInput = {
@@ -568,6 +846,9 @@ export type TagUpdateWithoutTodosInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTagsNestedInput
+  linkedTags?: Prisma.TagLinkUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateWithoutTodosInput = {
@@ -577,6 +858,9 @@ export type TagUncheckedUpdateWithoutTodosInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  linkedTags?: Prisma.TagLinkUncheckedUpdateManyWithoutSourceTagNestedInput
+  referencedBy?: Prisma.TagLinkUncheckedUpdateManyWithoutTargetTagNestedInput
+  linkedJars?: Prisma.JarTagLinkUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type TagUncheckedUpdateManyWithoutTodosInput = {
@@ -595,10 +879,16 @@ export type TagUncheckedUpdateManyWithoutTodosInput = {
 
 export type TagCountOutputType = {
   todos: number
+  linkedTags: number
+  referencedBy: number
+  linkedJars: number
 }
 
 export type TagCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   todos?: boolean | TagCountOutputTypeCountTodosArgs
+  linkedTags?: boolean | TagCountOutputTypeCountLinkedTagsArgs
+  referencedBy?: boolean | TagCountOutputTypeCountReferencedByArgs
+  linkedJars?: boolean | TagCountOutputTypeCountLinkedJarsArgs
 }
 
 /**
@@ -618,6 +908,27 @@ export type TagCountOutputTypeCountTodosArgs<ExtArgs extends runtime.Types.Exten
   where?: Prisma.TodoWhereInput
 }
 
+/**
+ * TagCountOutputType without action
+ */
+export type TagCountOutputTypeCountLinkedTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TagLinkWhereInput
+}
+
+/**
+ * TagCountOutputType without action
+ */
+export type TagCountOutputTypeCountReferencedByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TagLinkWhereInput
+}
+
+/**
+ * TagCountOutputType without action
+ */
+export type TagCountOutputTypeCountLinkedJarsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.JarTagLinkWhereInput
+}
+
 
 export type TagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -628,6 +939,9 @@ export type TagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   todos?: boolean | Prisma.Tag$todosArgs<ExtArgs>
+  linkedTags?: boolean | Prisma.Tag$linkedTagsArgs<ExtArgs>
+  referencedBy?: boolean | Prisma.Tag$referencedByArgs<ExtArgs>
+  linkedJars?: boolean | Prisma.Tag$linkedJarsArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
@@ -664,6 +978,9 @@ export type TagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
 export type TagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   todos?: boolean | Prisma.Tag$todosArgs<ExtArgs>
+  linkedTags?: boolean | Prisma.Tag$linkedTagsArgs<ExtArgs>
+  referencedBy?: boolean | Prisma.Tag$referencedByArgs<ExtArgs>
+  linkedJars?: boolean | Prisma.Tag$linkedJarsArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TagIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -678,6 +995,9 @@ export type $TagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
     todos: Prisma.$TodoPayload<ExtArgs>[]
+    linkedTags: Prisma.$TagLinkPayload<ExtArgs>[]
+    referencedBy: Prisma.$TagLinkPayload<ExtArgs>[]
+    linkedJars: Prisma.$JarTagLinkPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1082,6 +1402,9 @@ export interface Prisma__TagClient<T, Null = never, ExtArgs extends runtime.Type
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   todos<T extends Prisma.Tag$todosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$todosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TodoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  linkedTags<T extends Prisma.Tag$linkedTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$linkedTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TagLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  referencedBy<T extends Prisma.Tag$referencedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$referencedByArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TagLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  linkedJars<T extends Prisma.Tag$linkedJarsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tag$linkedJarsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$JarTagLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1534,6 +1857,78 @@ export type Tag$todosArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   take?: number
   skip?: number
   distinct?: Prisma.TodoScalarFieldEnum | Prisma.TodoScalarFieldEnum[]
+}
+
+/**
+ * Tag.linkedTags
+ */
+export type Tag$linkedTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TagLink
+   */
+  select?: Prisma.TagLinkSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TagLink
+   */
+  omit?: Prisma.TagLinkOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TagLinkInclude<ExtArgs> | null
+  where?: Prisma.TagLinkWhereInput
+  orderBy?: Prisma.TagLinkOrderByWithRelationInput | Prisma.TagLinkOrderByWithRelationInput[]
+  cursor?: Prisma.TagLinkWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TagLinkScalarFieldEnum | Prisma.TagLinkScalarFieldEnum[]
+}
+
+/**
+ * Tag.referencedBy
+ */
+export type Tag$referencedByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TagLink
+   */
+  select?: Prisma.TagLinkSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TagLink
+   */
+  omit?: Prisma.TagLinkOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TagLinkInclude<ExtArgs> | null
+  where?: Prisma.TagLinkWhereInput
+  orderBy?: Prisma.TagLinkOrderByWithRelationInput | Prisma.TagLinkOrderByWithRelationInput[]
+  cursor?: Prisma.TagLinkWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TagLinkScalarFieldEnum | Prisma.TagLinkScalarFieldEnum[]
+}
+
+/**
+ * Tag.linkedJars
+ */
+export type Tag$linkedJarsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the JarTagLink
+   */
+  select?: Prisma.JarTagLinkSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the JarTagLink
+   */
+  omit?: Prisma.JarTagLinkOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.JarTagLinkInclude<ExtArgs> | null
+  where?: Prisma.JarTagLinkWhereInput
+  orderBy?: Prisma.JarTagLinkOrderByWithRelationInput | Prisma.JarTagLinkOrderByWithRelationInput[]
+  cursor?: Prisma.JarTagLinkWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.JarTagLinkScalarFieldEnum | Prisma.JarTagLinkScalarFieldEnum[]
 }
 
 /**

@@ -37,3 +37,18 @@ export type Jar = Prisma.JarModel
  * 
  */
 export type Tag = Prisma.TagModel
+/**
+ * Model JarLink
+ * 
+ */
+export type JarLink = Prisma.JarLinkModel
+/**
+ * Model TagLink
+ * 
+ */
+export type TagLink = Prisma.TagLinkModel
+/**
+ * Model JarTagLink
+ * 
+ */
+export type JarTagLink = Prisma.JarTagLinkModel
