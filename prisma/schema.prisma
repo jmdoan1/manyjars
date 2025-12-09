@@ -21,6 +21,14 @@ model User {
   tags  Tag[]
 }
 
+enum Priority {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
 model Todo {
   id        String   @id @default(uuid())
   title     String
@@ -30,8 +38,7 @@ model Todo {
   updatedAt DateTime @updatedAt
 
   completed Boolean  @default(false)
-  // e.g. 1 = low, 2 = medium, 3 = high; tweak as you like
-  priority  Int?
+  priority  Priority  @default(MEDIUM)
 
   jars Jar[] @relation("TodoJars")
   tags Tag[] @relation("TodoTags")

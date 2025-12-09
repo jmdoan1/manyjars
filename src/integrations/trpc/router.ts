@@ -9,11 +9,19 @@ const todoBaseInclude = {
   tags: true,
 } as const
 
+const priorityEnum = z.enum([
+  'VERY_LOW',
+  'LOW',
+  'MEDIUM',
+  'HIGH',
+  'VERY_HIGH',
+])
+
 const todoUpsertMetaInput = z.object({
   // jar/tag *names*; we will connectOrCreate per user
   jars: z.array(z.string().min(1)).optional(),
   tags: z.array(z.string().min(1)).optional(),
-  priority: z.number().int().min(1).max(5).optional(),
+  priority: priorityEnum.optional(),
 })
 
 const todosRouter = {

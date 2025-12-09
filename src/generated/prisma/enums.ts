@@ -9,7 +9,12 @@
 * 🟢 You can import this file directly.
 */
 
+export const Priority = {
+  VERY_LOW: 'VERY_LOW',
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  VERY_HIGH: 'VERY_HIGH'
+} as const
 
-
-// This file is empty because there are no enums in the schema.
-export {}
+export type Priority = (typeof Priority)[keyof typeof Priority]

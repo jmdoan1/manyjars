@@ -20,18 +20,8 @@ export type TodoModel = runtime.Types.Result.DefaultSelection<Prisma.$TodoPayloa
 
 export type AggregateTodo = {
   _count: TodoCountAggregateOutputType | null
-  _avg: TodoAvgAggregateOutputType | null
-  _sum: TodoSumAggregateOutputType | null
   _min: TodoMinAggregateOutputType | null
   _max: TodoMaxAggregateOutputType | null
-}
-
-export type TodoAvgAggregateOutputType = {
-  priority: number | null
-}
-
-export type TodoSumAggregateOutputType = {
-  priority: number | null
 }
 
 export type TodoMinAggregateOutputType = {
@@ -41,7 +31,7 @@ export type TodoMinAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   completed: boolean | null
-  priority: number | null
+  priority: $Enums.Priority | null
 }
 
 export type TodoMaxAggregateOutputType = {
@@ -51,7 +41,7 @@ export type TodoMaxAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   completed: boolean | null
-  priority: number | null
+  priority: $Enums.Priority | null
 }
 
 export type TodoCountAggregateOutputType = {
@@ -65,14 +55,6 @@ export type TodoCountAggregateOutputType = {
   _all: number
 }
 
-
-export type TodoAvgAggregateInputType = {
-  priority?: true
-}
-
-export type TodoSumAggregateInputType = {
-  priority?: true
-}
 
 export type TodoMinAggregateInputType = {
   id?: true
@@ -143,18 +125,6 @@ export type TodoAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
-   * Select which fields to average
-  **/
-  _avg?: TodoAvgAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
-   * Select which fields to sum
-  **/
-  _sum?: TodoSumAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
    * Select which fields to find the minimum value
   **/
   _min?: TodoMinAggregateInputType
@@ -185,8 +155,6 @@ export type TodoGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   _count?: TodoCountAggregateInputType | true
-  _avg?: TodoAvgAggregateInputType
-  _sum?: TodoSumAggregateInputType
   _min?: TodoMinAggregateInputType
   _max?: TodoMaxAggregateInputType
 }
@@ -198,10 +166,8 @@ export type TodoGroupByOutputType = {
   createdAt: Date
   updatedAt: Date
   completed: boolean
-  priority: number | null
+  priority: $Enums.Priority
   _count: TodoCountAggregateOutputType | null
-  _avg: TodoAvgAggregateOutputType | null
-  _sum: TodoSumAggregateOutputType | null
   _min: TodoMinAggregateOutputType | null
   _max: TodoMaxAggregateOutputType | null
 }
@@ -231,7 +197,7 @@ export type TodoWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Todo"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Todo"> | Date | string
   completed?: Prisma.BoolFilter<"Todo"> | boolean
-  priority?: Prisma.IntNullableFilter<"Todo"> | number | null
+  priority?: Prisma.EnumPriorityFilter<"Todo"> | $Enums.Priority
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   jars?: Prisma.JarListRelationFilter
   tags?: Prisma.TagListRelationFilter
@@ -244,7 +210,7 @@ export type TodoOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   completed?: Prisma.SortOrder
-  priority?: Prisma.SortOrderInput | Prisma.SortOrder
+  priority?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   jars?: Prisma.JarOrderByRelationAggregateInput
   tags?: Prisma.TagOrderByRelationAggregateInput
@@ -260,7 +226,7 @@ export type TodoWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Todo"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Todo"> | Date | string
   completed?: Prisma.BoolFilter<"Todo"> | boolean
-  priority?: Prisma.IntNullableFilter<"Todo"> | number | null
+  priority?: Prisma.EnumPriorityFilter<"Todo"> | $Enums.Priority
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   jars?: Prisma.JarListRelationFilter
   tags?: Prisma.TagListRelationFilter
@@ -273,12 +239,10 @@ export type TodoOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   completed?: Prisma.SortOrder
-  priority?: Prisma.SortOrderInput | Prisma.SortOrder
+  priority?: Prisma.SortOrder
   _count?: Prisma.TodoCountOrderByAggregateInput
-  _avg?: Prisma.TodoAvgOrderByAggregateInput
   _max?: Prisma.TodoMaxOrderByAggregateInput
   _min?: Prisma.TodoMinOrderByAggregateInput
-  _sum?: Prisma.TodoSumOrderByAggregateInput
 }
 
 export type TodoScalarWhereWithAggregatesInput = {
@@ -291,7 +255,7 @@ export type TodoScalarWhereWithAggregatesInput = {
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Todo"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Todo"> | Date | string
   completed?: Prisma.BoolWithAggregatesFilter<"Todo"> | boolean
-  priority?: Prisma.IntNullableWithAggregatesFilter<"Todo"> | number | null
+  priority?: Prisma.EnumPriorityWithAggregatesFilter<"Todo"> | $Enums.Priority
 }
 
 export type TodoCreateInput = {
@@ -300,7 +264,7 @@ export type TodoCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   user: Prisma.UserCreateNestedOneWithoutTodosInput
   jars?: Prisma.JarCreateNestedManyWithoutTodosInput
   tags?: Prisma.TagCreateNestedManyWithoutTodosInput
@@ -313,7 +277,7 @@ export type TodoUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   jars?: Prisma.JarUncheckedCreateNestedManyWithoutTodosInput
   tags?: Prisma.TagUncheckedCreateNestedManyWithoutTodosInput
 }
@@ -324,7 +288,7 @@ export type TodoUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   user?: Prisma.UserUpdateOneRequiredWithoutTodosNestedInput
   jars?: Prisma.JarUpdateManyWithoutTodosNestedInput
   tags?: Prisma.TagUpdateManyWithoutTodosNestedInput
@@ -337,7 +301,7 @@ export type TodoUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   jars?: Prisma.JarUncheckedUpdateManyWithoutTodosNestedInput
   tags?: Prisma.TagUncheckedUpdateManyWithoutTodosNestedInput
 }
@@ -349,7 +313,7 @@ export type TodoCreateManyInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
 }
 
 export type TodoUpdateManyMutationInput = {
@@ -358,7 +322,7 @@ export type TodoUpdateManyMutationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
 }
 
 export type TodoUncheckedUpdateManyInput = {
@@ -368,7 +332,7 @@ export type TodoUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
 }
 
 export type TodoListRelationFilter = {
@@ -391,10 +355,6 @@ export type TodoCountOrderByAggregateInput = {
   priority?: Prisma.SortOrder
 }
 
-export type TodoAvgOrderByAggregateInput = {
-  priority?: Prisma.SortOrder
-}
-
 export type TodoMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
@@ -412,10 +372,6 @@ export type TodoMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   completed?: Prisma.SortOrder
-  priority?: Prisma.SortOrder
-}
-
-export type TodoSumOrderByAggregateInput = {
   priority?: Prisma.SortOrder
 }
 
@@ -465,12 +421,8 @@ export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
+export type EnumPriorityFieldUpdateOperationsInput = {
+  set?: $Enums.Priority
 }
 
 export type TodoCreateNestedManyWithoutJarsInput = {
@@ -555,7 +507,7 @@ export type TodoCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   jars?: Prisma.JarCreateNestedManyWithoutTodosInput
   tags?: Prisma.TagCreateNestedManyWithoutTodosInput
 }
@@ -566,7 +518,7 @@ export type TodoUncheckedCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   jars?: Prisma.JarUncheckedCreateNestedManyWithoutTodosInput
   tags?: Prisma.TagUncheckedCreateNestedManyWithoutTodosInput
 }
@@ -607,7 +559,7 @@ export type TodoScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Todo"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Todo"> | Date | string
   completed?: Prisma.BoolFilter<"Todo"> | boolean
-  priority?: Prisma.IntNullableFilter<"Todo"> | number | null
+  priority?: Prisma.EnumPriorityFilter<"Todo"> | $Enums.Priority
 }
 
 export type TodoCreateWithoutJarsInput = {
@@ -616,7 +568,7 @@ export type TodoCreateWithoutJarsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   user: Prisma.UserCreateNestedOneWithoutTodosInput
   tags?: Prisma.TagCreateNestedManyWithoutTodosInput
 }
@@ -628,7 +580,7 @@ export type TodoUncheckedCreateWithoutJarsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   tags?: Prisma.TagUncheckedCreateNestedManyWithoutTodosInput
 }
 
@@ -659,7 +611,7 @@ export type TodoCreateWithoutTagsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   user: Prisma.UserCreateNestedOneWithoutTodosInput
   jars?: Prisma.JarCreateNestedManyWithoutTodosInput
 }
@@ -671,7 +623,7 @@ export type TodoUncheckedCreateWithoutTagsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
   jars?: Prisma.JarUncheckedCreateNestedManyWithoutTodosInput
 }
 
@@ -702,7 +654,7 @@ export type TodoCreateManyUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   completed?: boolean
-  priority?: number | null
+  priority?: $Enums.Priority
 }
 
 export type TodoUpdateWithoutUserInput = {
@@ -711,7 +663,7 @@ export type TodoUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   jars?: Prisma.JarUpdateManyWithoutTodosNestedInput
   tags?: Prisma.TagUpdateManyWithoutTodosNestedInput
 }
@@ -722,7 +674,7 @@ export type TodoUncheckedUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   jars?: Prisma.JarUncheckedUpdateManyWithoutTodosNestedInput
   tags?: Prisma.TagUncheckedUpdateManyWithoutTodosNestedInput
 }
@@ -733,7 +685,7 @@ export type TodoUncheckedUpdateManyWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
 }
 
 export type TodoUpdateWithoutJarsInput = {
@@ -742,7 +694,7 @@ export type TodoUpdateWithoutJarsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   user?: Prisma.UserUpdateOneRequiredWithoutTodosNestedInput
   tags?: Prisma.TagUpdateManyWithoutTodosNestedInput
 }
@@ -754,7 +706,7 @@ export type TodoUncheckedUpdateWithoutJarsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   tags?: Prisma.TagUncheckedUpdateManyWithoutTodosNestedInput
 }
 
@@ -765,7 +717,7 @@ export type TodoUncheckedUpdateManyWithoutJarsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
 }
 
 export type TodoUpdateWithoutTagsInput = {
@@ -774,7 +726,7 @@ export type TodoUpdateWithoutTagsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   user?: Prisma.UserUpdateOneRequiredWithoutTodosNestedInput
   jars?: Prisma.JarUpdateManyWithoutTodosNestedInput
 }
@@ -786,7 +738,7 @@ export type TodoUncheckedUpdateWithoutTagsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
   jars?: Prisma.JarUncheckedUpdateManyWithoutTodosNestedInput
 }
 
@@ -797,7 +749,7 @@ export type TodoUncheckedUpdateManyWithoutTagsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  priority?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  priority?: Prisma.EnumPriorityFieldUpdateOperationsInput | $Enums.Priority
 }
 
 
@@ -914,7 +866,7 @@ export type $TodoPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     createdAt: Date
     updatedAt: Date
     completed: boolean
-    priority: number | null
+    priority: $Enums.Priority
   }, ExtArgs["result"]["todo"]>
   composites: {}
 }
@@ -1347,7 +1299,7 @@ export interface TodoFieldRefs {
   readonly createdAt: Prisma.FieldRef<"Todo", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Todo", 'DateTime'>
   readonly completed: Prisma.FieldRef<"Todo", 'Boolean'>
-  readonly priority: Prisma.FieldRef<"Todo", 'Int'>
+  readonly priority: Prisma.FieldRef<"Todo", 'Priority'>
 }
     
 
