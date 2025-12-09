@@ -193,19 +193,24 @@ export function TagsModule(_props: ModuleProps) {
 
   // Build suggestion rows
   const query = descMention?.query ?? ''
-  const jarOrTagList = descMention?.type === 'jar' ? jars ?? [] : tags ?? []
   
-  let filteredList = jarOrTagList
-  if (descMention && query) {
-    filteredList = filteredList.filter((item) =>
-      item.name.toLowerCase().startsWith(query.toLowerCase()),
-    )
+  let filteredList: typeof jars | typeof tags = []
+  if (descMention?.type === 'jar') {
+    const jarList = jars ?? []
+    filteredList = query
+      ? jarList.filter((item) => item.name.toLowerCase().startsWith(query.toLowerCase()))
+      : jarList
+  } else if (descMention?.type === 'tag') {
+    const tagList = tags ?? []
+    filteredList = query
+      ? tagList.filter((item) => item.name.toLowerCase().startsWith(query.toLowerCase()))
+      : tagList
   }
   filteredList = filteredList.slice(0, 5)
 
   type Row =
     | { kind: 'typed'; label: string; description: string }
-    | { kind: 'suggestion'; item: (typeof jarOrTagList)[number] }
+    | { kind: 'suggestion'; item: NonNullable<typeof jars>[number] | NonNullable<typeof tags>[number] }
 
   const rows: Row[] = []
   if (descMention) {

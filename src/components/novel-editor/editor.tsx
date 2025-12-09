@@ -35,6 +35,7 @@ export interface NovelEditorProps {
   className?: string;
   editorClassName?: string;
   showToolbar?: boolean;
+  placeholder?: string;
 }
 
 export interface NovelEditorHandle {
@@ -65,6 +66,7 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
   className = "",
   editorClassName = "",
   showToolbar = true,
+  placeholder,
 }, ref) {
   const [content, setContent] = useState<JSONContent | undefined>(
     typeof initialContent === "string" ? undefined : initialContent
@@ -244,6 +246,7 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
             attributes: {
               class:
                 "prose prose-invert prose-sm sm:prose-base max-w-full focus:outline-none px-4 py-3 min-h-[100px] prose-headings:text-white prose-p:text-white/90 prose-strong:text-white prose-em:text-white/90 prose-code:text-blue-300 prose-blockquote:text-white/80 prose-li:text-white/90",
+              ...(placeholder ? { 'data-placeholder': placeholder } : {}),
             },
           }}
           onCreate={handleCreate}
