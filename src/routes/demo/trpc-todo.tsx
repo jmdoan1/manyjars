@@ -17,6 +17,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { NovelEditor, type ActiveMention as EditorActiveMention, type MentionPosition as EditorMentionPosition, type NovelEditorHandle } from '@/components/novel-editor'
 
 type PriorityEnum =
   | 'VERY_LOW'
@@ -234,10 +235,14 @@ function TRPCTodos() {
   const { data: tags } = useQuery(trpc.tags.list.queryOptions())
 
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [descriptionHtml, setDescriptionHtml] = useState('')
+  const [descriptionText, setDescriptionText] = useState('')
+  const [editorKey, setEditorKey] = useState(0)
   const [activeField, setActiveField] = useState<'title' | 'description'>('title')
   const [activeMention, setActiveMention] =
     useState<ActiveMention>(null)
+  const [descMention, setDescMention] = useState<EditorActiveMention | null>(null)
+  const [descMentionPos, setDescMentionPos] = useState<EditorMentionPosition | null>(null)
   const [mentionPos, setMentionPos] =
     useState<MentionPosition>(null)
   const [highlightedIndex, setHighlightedIndex] =
@@ -245,15 +250,18 @@ function TRPCTodos() {
   const [showCompleted, setShowCompleted] = useState(false)
 
   const titleRef = useRef<HTMLInputElement | null>(null)
-  const descriptionRef = useRef<HTMLTextAreaElement | null>(null)
+  const descEditorRef = useRef<NovelEditorHandle | null>(null)
 
   const { mutate: addTodo } = useMutation({
     ...trpc.todos.add.mutationOptions(),
     onSuccess: () => {
       refetch()
       setTitle('')
-      setDescription('')
+      setDescriptionHtml('')
+      setDescriptionText('')
+      setEditorKey(k => k + 1)
       setActiveMention(null)
+      setDescMention(null)
       setMentionPos(null)
       setHighlightedIndex(-1)
     },
@@ -273,8 +281,8 @@ function TRPCTodos() {
     },
   })
 
-  const updateMentionState = useCallback((field: 'title' | 'description') => {
-    const el = field === 'title' ? titleRef.current : descriptionRef.current
+  const updateMentionState = useCallback(() => {
+    const el = titleRef.current
     if (!el) return
 
     const value = el.value
@@ -300,44 +308,42 @@ function TRPCTodos() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setTitle(e.target.value)
       setActiveField('title')
-      requestAnimationFrame(() => updateMentionState('title'))
-    },
-    [updateMentionState],
-  )
-
-  const handleDescriptionChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setDescription(e.target.value)
-      setActiveField('description')
-      requestAnimationFrame(() => updateMentionState('description'))
+      requestAnimationFrame(() => updateMentionState())
     },
     [updateMentionState],
   )
 
   const handleTitleSelect = useCallback(() => {
     setActiveField('title')
-    requestAnimationFrame(() => updateMentionState('title'))
+    requestAnimationFrame(() => updateMentionState())
   }, [updateMentionState])
 
-  const handleDescriptionSelect = useCallback(() => {
+  const handleDescriptionMentionChange = useCallback((mention: EditorActiveMention | null, position: EditorMentionPosition | null) => {
+    setDescMention(mention)
+    setDescMentionPos(position)
     setActiveField('description')
-    requestAnimationFrame(() => updateMentionState('description'))
-  }, [updateMentionState])
+    // Reset highlighted index when mention changes
+    if (mention) {
+      setHighlightedIndex(0)
+    } else {
+      setHighlightedIndex(-1)
+    }
+  }, [])
 
   const submitTodo = useCallback(() => {
     if (!title.trim()) return
 
-    const parsed = parseTodoText(title, description)
+    const parsed = parseTodoText(title, descriptionText)
     if (!parsed.title) return
 
     addTodo({
       title: parsed.title,
-      description: parsed.description || undefined,
+      description: descriptionHtml || undefined,
       jars: parsed.jars.length ? parsed.jars : undefined,
       tags: parsed.tags.length ? parsed.tags : undefined,
       priority: parsed.priority,
     })
-  }, [addTodo, title, description])
+  }, [addTodo, title, descriptionHtml, descriptionText])
 
   const applyMention = useCallback(
     (nameOrToken: string) => {
@@ -352,44 +358,67 @@ function TRPCTodos() {
 
       const replacement = `${prefix}${nameOrToken}`
 
-      const currentText = activeField === 'title' ? title : description
-      const setText = activeField === 'title' ? setTitle : setDescription
-
+      // Only apply to title field now (description uses rich editor)
+      const currentText = title
       const before = currentText.slice(0, activeMention.start)
       const after = currentText.slice(activeMention.end)
 
       const newText = `${before}${replacement}${after}`
 
-      setText(newText)
+      setTitle(newText)
       setActiveMention(null)
       setMentionPos(null)
       setHighlightedIndex(-1)
 
       requestAnimationFrame(() => {
-        const el = activeField === 'title' ? titleRef.current : descriptionRef.current
+        const el = titleRef.current
         if (!el) return
         const pos = before.length + replacement.length
         el.focus()
         el.setSelectionRange(pos, pos)
       })
     },
-    [activeMention, activeField, title, description],
+    [activeMention, title],
+  )
+
+  const applyDescriptionMention = useCallback(
+    (nameOrToken: string) => {
+      if (!descMention) return
+
+      const prefix =
+        descMention.type === 'jar'
+          ? '@'
+          : descMention.type === 'tag'
+          ? '#'
+          : '!'
+
+      const replacement = `${prefix}${nameOrToken} `
+
+      descEditorRef.current?.replaceText(descMention.start, descMention.end, replacement)
+      
+      setDescMention(null)
+      setDescMentionPos(null)
+      setHighlightedIndex(-1)
+    },
+    [descMention],
   )
 
   // ----- suggestions -----
 
-  const query = activeMention?.query ?? ''
+  // Use the mention from whichever field is active
+  const currentMention = activeField === 'title' ? activeMention : descMention
+  const query = currentMention?.query ?? ''
 
   // Base list for jar/tag suggestions
   const jarOrTagList =
-    activeMention?.type === 'jar'
+    currentMention?.type === 'jar'
       ? jars ?? []
-      : activeMention?.type === 'tag'
+      : currentMention?.type === 'tag'
       ? tags ?? []
       : []
 
   let filteredJarOrTag = jarOrTagList
-  if (activeMention && activeMention.type !== 'priority') {
+  if (currentMention && currentMention.type !== 'priority') {
     if (query) {
       filteredJarOrTag = filteredJarOrTag.filter((item) =>
         item.name.toLowerCase().startsWith(query.toLowerCase()),
@@ -415,8 +444,8 @@ function TRPCTodos() {
 
   const rows: Row[] = []
 
-  if (activeMention) {
-    if (activeMention.type === 'priority') {
+  if (currentMention) {
+    if (currentMention.type === 'priority') {
       const q = query.toLowerCase()
       let opts = PRIORITY_OPTIONS
       if (q) {
@@ -433,12 +462,12 @@ function TRPCTodos() {
       // jar/tag: typed option first (if any), then suggestions
       if (query) {
         const prefix =
-          activeMention.type === 'jar' ? '@' : '#'
+          currentMention.type === 'jar' ? '@' : '#'
         rows.push({
           kind: 'typed',
           label: `${prefix}${query}`,
           description:
-            activeMention.type === 'jar'
+            currentMention.type === 'jar'
               ? 'Use this as a new jar'
               : 'Use this as a new tag',
         })
@@ -450,12 +479,12 @@ function TRPCTodos() {
   }
 
   useEffect(() => {
-    if (activeMention && rows.length > 0) {
+    if ((activeMention || descMention) && rows.length > 0) {
       setHighlightedIndex(0)
     } else {
       setHighlightedIndex(-1)
     }
-  }, [activeMention, rows.length])
+  }, [activeMention, descMention, rows.length])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -533,6 +562,64 @@ function TRPCTodos() {
     ],
   )
 
+  const handleDescriptionKeyDown = useCallback(
+    (event: KeyboardEvent): boolean => {
+      if (!descMention || rows.length === 0) return false
+
+      if (event.key === 'ArrowDown') {
+        setHighlightedIndex((prev) => {
+          if (rows.length === 0) return -1
+          const next = prev < rows.length - 1 ? prev + 1 : 0
+          return next < 0 ? 0 : next
+        })
+        return true
+      }
+
+      if (event.key === 'ArrowUp') {
+        setHighlightedIndex((prev) => {
+          if (rows.length === 0) return -1
+          const next = prev > 0 ? prev - 1 : rows.length - 1
+          return next
+        })
+        return true
+      }
+
+      if ((event.key === 'Enter' || event.key === 'Tab') && !event.shiftKey) {
+        const idx = highlightedIndex >= 0 ? highlightedIndex : 0
+        const row = rows[idx]
+        if (!row) return false
+
+        if (row.kind === 'typed') {
+          // Keep what they typed, just close popup
+          setDescMention(null)
+          setDescMentionPos(null)
+          setHighlightedIndex(-1)
+          return true
+        }
+
+        if (row.kind === 'suggestion') {
+          applyDescriptionMention(row.item.name)
+          return true
+        }
+
+        if (row.kind === 'priority') {
+          applyDescriptionMention(row.option.token)
+          return true
+        }
+      }
+
+      if (event.key === 'Escape') {
+        setDescMention(null)
+        setDescMentionPos(null)
+        setHighlightedIndex(-1)
+        return true
+      }
+
+      return false
+    },
+    [descMention, rows, highlightedIndex, applyDescriptionMention],
+  )
+
   return (
     <div
       className="flex-1 flex items-center justify-center bg-linear-to-br from-purple-100 to-blue-100 p-4 text-white"
@@ -556,19 +643,22 @@ function TRPCTodos() {
             placeholder="Title... use @jar, #tag, !priority"
             className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
           />
-          <textarea
-            ref={descriptionRef}
-            value={description}
-            onChange={handleDescriptionChange}
-            onSelect={handleDescriptionSelect}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setActiveField('description')}
-            rows={2}
-            placeholder="Description (optional)... @jar, #tag, !priority also work here"
-            className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-y"
-          />
+          <div>
+            <NovelEditor
+              ref={descEditorRef}
+              editorKey={editorKey}
+              onHTMLChange={setDescriptionHtml}
+              onTextChange={setDescriptionText}
+              onMentionChange={handleDescriptionMentionChange}
+              onKeyDown={handleDescriptionKeyDown}
+              className="w-full"
+              editorClassName="focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
 
-          {activeMention &&
+          {/* Mention popup for title field */}
+          {activeField === 'title' &&
+            activeMention &&
             mentionPos &&
             rows.length > 0 && (
               <div
@@ -659,9 +749,102 @@ function TRPCTodos() {
                             } text-white`}
                           >
                             <span>
-                              {activeMention?.type === 'jar'
+                              {currentMention?.type === 'jar'
                                 ? '@'
                                 : '#'}
+                              {row.item.name}
+                            </span>
+                            {row.item.description && (
+                              <span className="ml-2 text-[11px] text-white/60">
+                                {row.item.description}
+                              </span>
+                            )}
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            )}
+
+          {/* Mention popup for description field - positioned at cursor */}
+          {activeField === 'description' &&
+            descMention &&
+            descMentionPos &&
+            rows.length > 0 && (
+              <div
+                className="absolute z-20 w-72"
+                style={{
+                  top: descMentionPos.top + 60, // Offset for title input + some padding
+                  left: descMentionPos.left,
+                }}
+              >
+                <Command className="rounded-md border border-white/20 bg-black/95 text-sm text-white shadow-lg">
+                  <CommandList>
+                    <CommandEmpty className="px-3 py-2 text-xs text-white/60">
+                      No matches.
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {rows.map((row, index) => {
+                        const isActive = index === highlightedIndex
+
+                        if (row.kind === 'typed') {
+                          return (
+                            <CommandItem
+                              key="typed-option"
+                              value={row.label}
+                              onSelect={() => {
+                                setDescMention(null)
+                                setDescMentionPos(null)
+                                setHighlightedIndex(-1)
+                              }}
+                              onMouseEnter={() => setHighlightedIndex(index)}
+                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                                isActive ? 'bg-white/20' : ''
+                              }`}
+                            >
+                              <span className="text-white">{row.label}</span>
+                              <span className="text-[11px] text-white/60">
+                                {row.description}
+                              </span>
+                            </CommandItem>
+                          )
+                        }
+
+                        if (row.kind === 'priority') {
+                          return (
+                            <CommandItem
+                              key={row.option.code}
+                              value={row.option.token}
+                              onSelect={() => applyDescriptionMention(row.option.token)}
+                              onMouseEnter={() => setHighlightedIndex(index)}
+                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                                isActive ? 'bg-white/20' : ''
+                              }`}
+                            >
+                              <span className="text-white">!{row.option.token}</span>
+                              <span className="text-[11px] text-white/60">
+                                {row.option.label} — {row.option.description}
+                              </span>
+                            </CommandItem>
+                          )
+                        }
+
+                        // suggestion (jar/tag)
+                        return (
+                          <CommandItem
+                            key={row.item.id}
+                            value={row.item.name}
+                            onSelect={() => applyDescriptionMention(row.item.name)}
+                            onMouseEnter={() => setHighlightedIndex(index)}
+                            data-selected={false}
+                            className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                              isActive ? 'bg-white/20' : ''
+                            } text-white`}
+                          >
+                            <span>
+                              {descMention?.type === 'jar' ? '@' : '#'}
                               {row.item.name}
                             </span>
                             {row.item.description && (
@@ -724,9 +907,10 @@ function TRPCTodos() {
               </div>
 
               {t.description && (
-                <p className="text-sm text-white/70 ml-6">
-                  {t.description}
-                </p>
+                <div 
+                  className="text-sm text-white/70 ml-6 prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:my-2"
+                  dangerouslySetInnerHTML={{ __html: t.description }}
+                />
               )}
 
               <div className="flex flex-wrap gap-2 text-xs text-white/80">
@@ -824,9 +1008,10 @@ function TRPCTodos() {
                     </div>
 
                     {t.description && (
-                      <p className="text-sm text-white/50 ml-6 line-through">
-                        {t.description}
-                      </p>
+                      <div 
+                        className="text-sm text-white/50 ml-6 line-through prose prose-sm prose-invert max-w-none opacity-50 prose-p:my-1 prose-headings:my-2"
+                        dangerouslySetInnerHTML={{ __html: t.description }}
+                      />
                     )}
 
                     <div className="flex flex-wrap gap-2 text-xs text-white/80">
