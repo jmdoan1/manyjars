@@ -283,7 +283,7 @@ export function TagsModule(_props: ModuleProps) {
               <div
                 className="absolute z-20 w-72"
                 style={{
-                  top: descMentionPos.top + 60,
+                  top: descMentionPos.top,
                   left: descMentionPos.left,
                 }}
               >

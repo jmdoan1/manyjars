@@ -276,7 +276,6 @@ export function JarsModule(_props: ModuleProps) {
               onKeyDown={handleDescriptionKeyDown}
               className="w-full"
               editorClassName="focus:ring-2 focus:ring-purple-400/50"
-              placeholder="Description (mention with @Jar or #Tag)..."
             />
 
             {/* Mention popup */}
@@ -284,7 +283,7 @@ export function JarsModule(_props: ModuleProps) {
               <div
                 className="absolute z-20 w-72"
                 style={{
-                  top: descMentionPos.top + 60,
+                  top: descMentionPos.top,
                   left: descMentionPos.left,
                 }}
               >
