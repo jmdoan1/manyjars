@@ -92,7 +92,7 @@ export const TodoScalarFieldEnum = {
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  completed: 'completed',
+  completedAt: 'completedAt',
   priority: 'priority'
 } as const
 

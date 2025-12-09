@@ -37,8 +37,8 @@ model Todo {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  completed Boolean  @default(false)
-  priority  Priority  @default(MEDIUM)
+  completedAt DateTime?
+  priority    Priority  @default(MEDIUM)
 
   jars Jar[] @relation("TodoJars")
   tags Tag[] @relation("TodoTags")

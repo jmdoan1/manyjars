@@ -643,7 +643,7 @@ function TRPCTodos() {
         </div>
 
         <ul className="mt-4 space-y-2">
-          {todos?.filter(t => !t.completed).map((t) => (
+          {todos?.filter(t => !t.completedAt).map((t) => (
             <li
               key={t.id}
               className="bg-white/10 border border-white/20 rounded-lg p-3 backdrop-blur-sm shadow-md flex flex-col gap-2"
@@ -652,18 +652,18 @@ function TRPCTodos() {
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={t.completed}
+                    checked={!!t.completedAt}
                     onChange={(e) =>
                       updateTodo({
                         id: t.id,
-                        completed: e.target.checked,
+                        completedAt: e.target.checked ? new Date() : null,
                       })
                     }
                     className="h-4 w-4"
                   />
                   <span
                     className={`text-lg text-white ${
-                      t.completed ? 'line-through opacity-70' : ''
+                      t.completedAt ? 'line-through opacity-70' : ''
                     }`}
                   >
                     {t.title}
@@ -722,7 +722,7 @@ function TRPCTodos() {
         </ul>
 
         {/* Completed tasks section */}
-        {todos?.some(t => t.completed) && (
+        {todos?.some(t => t.completedAt) && (
           <div className="mt-6">
             <button
               onClick={() => setShowCompleted(!showCompleted)}
@@ -736,12 +736,12 @@ function TRPCTodos() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              <span>Completed ({todos.filter(t => t.completed).length})</span>
+              <span>Completed ({todos.filter(t => t.completedAt).length})</span>
             </button>
 
             {showCompleted && (
               <ul className="mt-2 space-y-2">
-                {todos.filter(t => t.completed).map((t) => (
+                {todos.filter(t => t.completedAt).map((t) => (
                   <li
                     key={t.id}
                     className="bg-white/5 border border-white/10 rounded-lg p-3 backdrop-blur-sm shadow-md flex flex-col gap-2 opacity-70"
@@ -750,11 +750,11 @@ function TRPCTodos() {
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={t.completed}
+                          checked={!!t.completedAt}
                           onChange={(e) =>
                             updateTodo({
                               id: t.id,
-                              completed: e.target.checked,
+                              completedAt: e.target.checked ? new Date() : null,
                             })
                           }
                           className="h-4 w-4"

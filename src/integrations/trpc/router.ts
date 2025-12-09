@@ -108,7 +108,7 @@ const todosRouter = {
         .object({
           id: z.string().uuid(),
           title: z.string().min(1).optional(),
-          completed: z.boolean().optional(),
+          completedAt: z.date().nullable().optional(),
         })
         .merge(todoUpsertMetaInput),
     )
