@@ -9,6 +9,7 @@ import {
   EditorRoot,
   type JSONContent,
   handleCommandNavigation,
+  useEditor,
 } from "novel";
 import { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from "react";
 import { defaultExtensions } from "./extensions";
@@ -32,13 +33,24 @@ export interface NovelEditorProps {
   onKeyDown?: (event: KeyboardEvent) => boolean | void;
   className?: string;
   editorClassName?: string;
-  editorKey?: string | number;
   showToolbar?: boolean;
 }
 
 export interface NovelEditorHandle {
   replaceText: (start: number, end: number, replacement: string) => void;
   focus: () => void;
+  clear: () => void;
+}
+
+// Helper component to sync editor instance to parent ref
+function EditorRefSync({ editorRef }: { editorRef: React.MutableRefObject<any> }) {
+  const { editor } = useEditor();
+  useEffect(() => {
+    if (editor) {
+      editorRef.current = editor;
+    }
+  }, [editor, editorRef]);
+  return null;
 }
 
 export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(function NovelEditor({
@@ -50,7 +62,6 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
   onKeyDown,
   className = "",
   editorClassName = "",
-  editorKey,
   showToolbar = true,
 }, ref) {
   const [content, setContent] = useState<JSONContent | undefined>(
@@ -122,6 +133,12 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
     },
     focus: () => {
       editorRef.current?.commands?.focus();
+    },
+    clear: () => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      editor.commands.clearContent();
+      setContent(undefined);
     },
   }), []);
 
@@ -202,8 +219,12 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
     [onKeyDown]
   );
 
+  const handleCreate = useCallback(({ editor }: { editor: any }) => {
+    editorRef.current = editor;
+  }, []);
+
   return (
-    <div className={`relative ${className}`} key={editorKey} ref={containerRef}>
+    <div className={`relative ${className}`} ref={containerRef}>
       <EditorRoot>
         <EditorContent
           initialContent={content}
@@ -216,6 +237,7 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
                 "prose prose-invert prose-sm sm:prose-base max-w-full focus:outline-none px-4 py-3 min-h-[100px] prose-headings:text-white prose-p:text-white/90 prose-strong:text-white prose-em:text-white/90 prose-code:text-blue-300 prose-blockquote:text-white/80 prose-li:text-white/90",
             },
           }}
+          onCreate={handleCreate}
           onUpdate={handleUpdate}
           onSelectionUpdate={handleSelectionUpdate}
           slotBefore={showToolbar ? <EditorToolbar /> : undefined}
@@ -245,6 +267,7 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
           </EditorCommand>
 
           <EditorBubbleMenu />
+          <EditorRefSync editorRef={editorRef} />
         </EditorContent>
       </EditorRoot>
     </div>

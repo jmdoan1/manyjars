@@ -489,8 +489,8 @@ function TRPCTodos() {
           />
           <div>
             <NovelEditor
+              key={editorKey}
               ref={descEditorRef}
-              editorKey={editorKey}
               onHTMLChange={setDescriptionHtml}
               onTextChange={setDescriptionText}
               onMentionChange={handleDescriptionMentionChange}
