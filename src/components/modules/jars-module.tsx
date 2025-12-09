@@ -269,7 +269,7 @@ export function JarsModule(_props: ModuleProps) {
             <NovelEditor
               key={editorKey}
               ref={descEditorRef}
-              showToolbar={true}
+              showToolbar={false}
               onHTMLChange={setDescriptionHtml}
               onTextChange={() => {}}
               onMentionChange={handleDescriptionMentionChange}

@@ -350,7 +350,7 @@ export function NotesModule(_props: ModuleProps) {
 						<NovelEditor
 							key={editorKey}
 							ref={contentEditorRef}
-							showToolbar={true}
+							showToolbar={false}
 							onHTMLChange={setContentHtml}
 							onTextChange={setContentText}
 							onMentionChange={handleContentMentionChange}

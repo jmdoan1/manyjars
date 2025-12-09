@@ -565,6 +565,7 @@ function TRPCTodos() {
             <NovelEditor
               key={editorKey}
               ref={descEditorRef}
+              showToolbar={false}
               onHTMLChange={setDescriptionHtml}
               onTextChange={setDescriptionText}
               onMentionChange={handleDescriptionMentionChange}

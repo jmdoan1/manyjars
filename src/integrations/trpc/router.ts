@@ -18,6 +18,38 @@ const todoUpsertMetaInput = z.object({
 	priority: priorityEnum.optional(),
 });
 
+async function ensureEntitiesExist(
+	userId: string,
+	jarNames: string[],
+	tagNames: string[],
+) {
+	const uniqueJars = [...new Set(jarNames)];
+	const uniqueTags = [...new Set(tagNames)];
+
+	const [startJars, startTags] = await Promise.all([
+		Promise.all(
+			uniqueJars.map((name) =>
+				prisma.jar.upsert({
+					where: { userId_name: { userId, name } },
+					create: { userId, name },
+					update: {},
+				}),
+			),
+		),
+		Promise.all(
+			uniqueTags.map((name) =>
+				prisma.tag.upsert({
+					where: { userId_name: { userId, name } },
+					create: { userId, name },
+					update: {},
+				}),
+			),
+		),
+	]);
+
+	return { jars: startJars, tags: startTags };
+}
+
 const todosRouter = {
 	list: protectedProcedure.query(async ({ ctx }) => {
 		const todos = await prisma.todo.findMany({
@@ -243,12 +275,14 @@ const jarsRouter = {
 			// Parse mentions from description and create links
 			if (input.description) {
 				const { jars, tags } = parseMentions(input.description);
+				const { jars: targetJars, tags: targetTags } = await ensureEntitiesExist(
+					ctx.user.id,
+					jars,
+					tags,
+				);
 
 				// Link to mentioned jars
-				if (jars.length > 0) {
-					const targetJars = await prisma.jar.findMany({
-						where: { userId: ctx.user.id, name: { in: jars } },
-					});
+				if (targetJars.length > 0) {
 					await prisma.jarLink.createMany({
 						data: targetJars.map((target) => ({
 							sourceJarId: jar.id,
@@ -259,10 +293,7 @@ const jarsRouter = {
 				}
 
 				// Link to mentioned tags
-				if (tags.length > 0) {
-					const targetTags = await prisma.tag.findMany({
-						where: { userId: ctx.user.id, name: { in: tags } },
-					});
+				if (targetTags.length > 0) {
 					await prisma.jarTagLink.createMany({
 						data: targetTags.map((target) => ({
 							jarId: jar.id,
@@ -308,11 +339,10 @@ const jarsRouter = {
 				// Create new links from updated description
 				if (description) {
 					const { jars, tags } = parseMentions(description);
+					const { jars: targetJars, tags: targetTags } =
+						await ensureEntitiesExist(ctx.user.id, jars, tags);
 
-					if (jars.length > 0) {
-						const targetJars = await prisma.jar.findMany({
-							where: { userId: ctx.user.id, name: { in: jars } },
-						});
+					if (targetJars.length > 0) {
 						await prisma.jarLink.createMany({
 							data: targetJars.map((target) => ({
 								sourceJarId: jar.id,
@@ -322,10 +352,7 @@ const jarsRouter = {
 						});
 					}
 
-					if (tags.length > 0) {
-						const targetTags = await prisma.tag.findMany({
-							where: { userId: ctx.user.id, name: { in: tags } },
-						});
+					if (targetTags.length > 0) {
 						await prisma.jarTagLink.createMany({
 							data: targetTags.map((target) => ({
 								jarId: jar.id,
@@ -386,12 +413,14 @@ const tagsRouter = {
 			// Parse mentions from description and create links
 			if (input.description) {
 				const { jars, tags } = parseMentions(input.description);
+				const { jars: targetJars, tags: targetTags } = await ensureEntitiesExist(
+					ctx.user.id,
+					jars,
+					tags,
+				);
 
 				// Link to mentioned jars
-				if (jars.length > 0) {
-					const targetJars = await prisma.jar.findMany({
-						where: { userId: ctx.user.id, name: { in: jars } },
-					});
+				if (targetJars.length > 0) {
 					await prisma.jarTagLink.createMany({
 						data: targetJars.map((target) => ({
 							tagId: tag.id,
@@ -402,10 +431,7 @@ const tagsRouter = {
 				}
 
 				// Link to mentioned tags
-				if (tags.length > 0) {
-					const targetTags = await prisma.tag.findMany({
-						where: { userId: ctx.user.id, name: { in: tags } },
-					});
+				if (targetTags.length > 0) {
 					await prisma.tagLink.createMany({
 						data: targetTags.map((target) => ({
 							sourceTagId: tag.id,
@@ -451,11 +477,10 @@ const tagsRouter = {
 				// Create new links from updated description
 				if (description) {
 					const { jars, tags } = parseMentions(description);
+					const { jars: targetJars, tags: targetTags } =
+						await ensureEntitiesExist(ctx.user.id, jars, tags);
 
-					if (jars.length > 0) {
-						const targetJars = await prisma.jar.findMany({
-							where: { userId: ctx.user.id, name: { in: jars } },
-						});
+					if (targetJars.length > 0) {
 						await prisma.jarTagLink.createMany({
 							data: targetJars.map((target) => ({
 								tagId: tag.id,
@@ -465,10 +490,7 @@ const tagsRouter = {
 						});
 					}
 
-					if (tags.length > 0) {
-						const targetTags = await prisma.tag.findMany({
-							where: { userId: ctx.user.id, name: { in: tags } },
-						});
+					if (targetTags.length > 0) {
 						await prisma.tagLink.createMany({
 							data: targetTags.map((target) => ({
 								sourceTagId: tag.id,

@@ -269,7 +269,7 @@ export function TagsModule(_props: ModuleProps) {
             <NovelEditor
               key={editorKey}
               ref={descEditorRef}
-              showToolbar={true}
+              showToolbar={false}
               onHTMLChange={setDescriptionHtml}
               onTextChange={() => {}}
               onMentionChange={handleDescriptionMentionChange}
