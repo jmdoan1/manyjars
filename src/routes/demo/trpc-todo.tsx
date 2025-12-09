@@ -27,6 +27,7 @@ type PriorityEnum =
 
 type ParsedTodoMeta = {
   title: string
+  description: string
   jars: string[]
   tags: string[]
   priority?: PriorityEnum
@@ -114,25 +115,27 @@ const PRIORITY_LABEL: Record<PriorityEnum, string> = {
   VERY_HIGH: 'Very high',
 }
 
-function parseTodoText(text: string): ParsedTodoMeta {
+function parseTodoText(title: string, description: string): ParsedTodoMeta {
   const jarNames = new Set<string>()
   const tagNames = new Set<string>()
 
   const jarRegex = /@([a-zA-Z0-9_-]+)/g
   const tagRegex = /#([a-zA-Z0-9_-]+)/g
-  const priorityRegex = /!([a-zA-Z-]+)/
+
+  // Parse both title and description for jars, tags, priority
+  const combinedText = `${title} ${description}`
 
   let m: RegExpExecArray | null
 
-  while ((m = jarRegex.exec(text)) !== null) {
+  while ((m = jarRegex.exec(combinedText)) !== null) {
     jarNames.add(m[1])
   }
-  while ((m = tagRegex.exec(text)) !== null) {
+  while ((m = tagRegex.exec(combinedText)) !== null) {
     tagNames.add(m[1])
   }
 
   let priorityCode: PriorityEnum | undefined
-  const pMatch = text.match(priorityRegex)
+  const pMatch = combinedText.match(/!([a-zA-Z-]+)/)
   if (pMatch) {
     const key = (pMatch[1] ?? '').toLowerCase()
     const mapped = PRIORITY_TOKEN_MAP[key]
@@ -141,14 +144,20 @@ function parseTodoText(text: string): ParsedTodoMeta {
     }
   }
 
-  // keep @jars and #tags in the title; only strip !priority token
-  let clean = text
-    .replace(priorityRegex, '')
+  // Strip !priority tokens from both title and description
+  const cleanTitle = title
+    .replace(/!([a-zA-Z-]+)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  const cleanDescription = description
+    .replace(/!([a-zA-Z-]+)/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 
   return {
-    title: clean,
+    title: cleanTitle,
+    description: cleanDescription,
     jars: Array.from(jarNames),
     tags: Array.from(tagNames),
     priority: priorityCode,
@@ -224,7 +233,9 @@ function TRPCTodos() {
   const { data: jars } = useQuery(trpc.jars.list.queryOptions())
   const { data: tags } = useQuery(trpc.tags.list.queryOptions())
 
-  const [text, setText] = useState('')
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [activeField, setActiveField] = useState<'title' | 'description'>('title')
   const [activeMention, setActiveMention] =
     useState<ActiveMention>(null)
   const [mentionPos, setMentionPos] =
@@ -233,13 +244,15 @@ function TRPCTodos() {
     useState<number>(-1)
   const [showCompleted, setShowCompleted] = useState(false)
 
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const titleRef = useRef<HTMLInputElement | null>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null)
 
   const { mutate: addTodo } = useMutation({
     ...trpc.todos.add.mutationOptions(),
     onSuccess: () => {
       refetch()
-      setText('')
+      setTitle('')
+      setDescription('')
       setActiveMention(null)
       setMentionPos(null)
       setHighlightedIndex(-1)
@@ -260,8 +273,8 @@ function TRPCTodos() {
     },
   })
 
-  const updateMentionState = useCallback(() => {
-    const el = textareaRef.current
+  const updateMentionState = useCallback((field: 'title' | 'description') => {
+    const el = field === 'title' ? titleRef.current : descriptionRef.current
     if (!el) return
 
     const value = el.value
@@ -283,31 +296,48 @@ function TRPCTodos() {
     })
   }, [])
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setText(e.target.value)
-      requestAnimationFrame(updateMentionState)
+  const handleTitleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setTitle(e.target.value)
+      setActiveField('title')
+      requestAnimationFrame(() => updateMentionState('title'))
     },
     [updateMentionState],
   )
 
-  const handleSelect = useCallback(() => {
-    requestAnimationFrame(updateMentionState)
+  const handleDescriptionChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setDescription(e.target.value)
+      setActiveField('description')
+      requestAnimationFrame(() => updateMentionState('description'))
+    },
+    [updateMentionState],
+  )
+
+  const handleTitleSelect = useCallback(() => {
+    setActiveField('title')
+    requestAnimationFrame(() => updateMentionState('title'))
+  }, [updateMentionState])
+
+  const handleDescriptionSelect = useCallback(() => {
+    setActiveField('description')
+    requestAnimationFrame(() => updateMentionState('description'))
   }, [updateMentionState])
 
   const submitTodo = useCallback(() => {
-    if (!text.trim()) return
+    if (!title.trim()) return
 
-    const parsed = parseTodoText(text)
+    const parsed = parseTodoText(title, description)
     if (!parsed.title) return
 
     addTodo({
       title: parsed.title,
+      description: parsed.description || undefined,
       jars: parsed.jars.length ? parsed.jars : undefined,
       tags: parsed.tags.length ? parsed.tags : undefined,
       priority: parsed.priority,
     })
-  }, [addTodo, text])
+  }, [addTodo, title, description])
 
   const applyMention = useCallback(
     (nameOrToken: string) => {
@@ -322,8 +352,11 @@ function TRPCTodos() {
 
       const replacement = `${prefix}${nameOrToken}`
 
-      const before = text.slice(0, activeMention.start)
-      const after = text.slice(activeMention.end)
+      const currentText = activeField === 'title' ? title : description
+      const setText = activeField === 'title' ? setTitle : setDescription
+
+      const before = currentText.slice(0, activeMention.start)
+      const after = currentText.slice(activeMention.end)
 
       const newText = `${before}${replacement}${after}`
 
@@ -333,14 +366,14 @@ function TRPCTodos() {
       setHighlightedIndex(-1)
 
       requestAnimationFrame(() => {
-        const el = textareaRef.current
+        const el = activeField === 'title' ? titleRef.current : descriptionRef.current
         if (!el) return
         const pos = before.length + replacement.length
         el.focus()
         el.setSelectionRange(pos, pos)
       })
     },
-    [activeMention, text],
+    [activeMention, activeField, title, description],
   )
 
   // ----- suggestions -----
@@ -425,7 +458,7 @@ function TRPCTodos() {
   }, [activeMention, rows.length])
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const hasRows = rows.length > 0
 
       if (hasRows) {
@@ -512,14 +545,26 @@ function TRPCTodos() {
         <h1 className="text-2xl mb-4">ManyJars Todos</h1>
 
         <div className="flex flex-col gap-2 relative">
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={handleChange}
-            onSelect={handleSelect}
+          <input
+            ref={titleRef}
+            type="text"
+            value={title}
+            onChange={handleTitleChange}
+            onSelect={handleTitleSelect}
             onKeyDown={handleKeyDown}
-            rows={3}
-            placeholder="Type a todo... use @jar, #tag, and !low / !high / !medium etc."
+            onFocus={() => setActiveField('title')}
+            placeholder="Title... use @jar, #tag, !priority"
+            className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          />
+          <textarea
+            ref={descriptionRef}
+            value={description}
+            onChange={handleDescriptionChange}
+            onSelect={handleDescriptionSelect}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setActiveField('description')}
+            rows={2}
+            placeholder="Description (optional)... @jar, #tag, !priority also work here"
             className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-y"
           />
 
@@ -634,7 +679,7 @@ function TRPCTodos() {
             )}
 
           <button
-            disabled={text.trim().length === 0}
+            disabled={title.trim().length === 0}
             onClick={submitTodo}
             className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
           >
@@ -677,6 +722,12 @@ function TRPCTodos() {
                   Delete
                 </button>
               </div>
+
+              {t.description && (
+                <p className="text-sm text-white/70 ml-6">
+                  {t.description}
+                </p>
+              )}
 
               <div className="flex flex-wrap gap-2 text-xs text-white/80">
                 {t.jars?.map((j) => (
@@ -771,6 +822,12 @@ function TRPCTodos() {
                         Delete
                       </button>
                     </div>
+
+                    {t.description && (
+                      <p className="text-sm text-white/50 ml-6 line-through">
+                        {t.description}
+                      </p>
+                    )}
 
                     <div className="flex flex-wrap gap-2 text-xs text-white/80">
                       {t.jars?.map((j) => (

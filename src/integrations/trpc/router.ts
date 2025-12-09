@@ -39,6 +39,7 @@ const todosRouter = {
       z
         .object({
           title: z.string().min(1),
+          description: z.string().optional(),
         })
         .merge(todoUpsertMetaInput),
     )
@@ -51,6 +52,7 @@ const todosRouter = {
         const newTodo = await prisma.todo.create({
           data: {
             title: rest.title,
+            description: rest.description,
             userId: ctx.user.id,
             priority: rest.priority,
             // connect/create jars by name for this user
@@ -108,6 +110,7 @@ const todosRouter = {
         .object({
           id: z.string().uuid(),
           title: z.string().min(1).optional(),
+          description: z.string().nullable().optional(),
           completedAt: z.date().nullable().optional(),
         })
         .merge(todoUpsertMetaInput),
