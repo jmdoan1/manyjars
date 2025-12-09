@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
+import { PlusCircle } from 'lucide-react'
 import getCaretCoordinates from 'textarea-caret'
 import { NovelEditor, type NovelEditorHandle } from '@/components/novel-editor'
 import {
@@ -156,6 +157,7 @@ export function TodosModule(_props: ModuleProps) {
   const [mentionPos, setMentionPos] = useState<MentionPosition | null>(null)
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
   const [showCompleted, setShowCompleted] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
 
   const titleRef = useRef<HTMLInputElement | null>(null)
   const descEditorRef = useRef<NovelEditorHandle | null>(null)
@@ -172,6 +174,11 @@ export function TodosModule(_props: ModuleProps) {
       setDescMention(null)
       setMentionPos(null)
       setHighlightedIndex(-1)
+      
+      // Re-focus on title input for smooth consecutive todo entry
+      requestAnimationFrame(() => {
+        titleRef.current?.focus()
+      })
     },
   })
 
@@ -530,236 +537,250 @@ export function TodosModule(_props: ModuleProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Add Todo Toggle Button */}
+      <button
+        type="button"
+        onClick={() => setShowAddForm(!showAddForm)}
+        className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
+      >
+        <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
+        <span className="font-medium">
+          {showAddForm ? 'Hide' : 'Add New Todo'}
+        </span>
+      </button>
+
       {/* Add Todo Form */}
-      <div className="flex flex-col gap-2 relative">
-        <input
-          ref={titleRef}
-          type="text"
-          value={title}
-          onChange={handleTitleChange}
-          onSelect={handleTitleSelect}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setActiveField('title')}
-          placeholder="Add a todo... use @jar, #tag, !priority"
-          className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-transparent transition-all"
-        />
-        <div>
-          <NovelEditor
-            key={editorKey}
-            ref={descEditorRef}
-            showToolbar={false}
-            onHTMLChange={setDescriptionHtml}
-            onTextChange={setDescriptionText}
-            onMentionChange={handleDescriptionMentionChange}
-            onKeyDown={handleDescriptionKeyDown}
-            onSubmit={submitTodo}
-            className="w-full"
-            editorClassName="focus:ring-2 focus:ring-purple-400/50"
+      {showAddForm && (
+        <div className="flex flex-col gap-2 relative animate-in slide-in-from-top-2 fade-in duration-300">
+          <input
+            ref={titleRef}
+            type="text"
+            value={title}
+            onChange={handleTitleChange}
+            onSelect={handleTitleSelect}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setActiveField('title')}
+            placeholder="Add a todo... use @jar, #tag, !priority"
+            className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-transparent transition-all"
           />
-        </div>
+          <div>
+            <NovelEditor
+              key={editorKey}
+              ref={descEditorRef}
+              showToolbar={false}
+              onHTMLChange={setDescriptionHtml}
+              onTextChange={setDescriptionText}
+              onMentionChange={handleDescriptionMentionChange}
+              onKeyDown={handleDescriptionKeyDown}
+              onSubmit={submitTodo}
+              className="w-full"
+              editorClassName="focus:ring-2 focus:ring-purple-400/50"
+            />
+          </div>
 
-        {/* Mention popup for title field */}
-        {activeField === 'title' &&
-          activeMention &&
-          mentionPos &&
-          rows.length > 0 && (
-            <div
-              className="absolute z-20 w-72"
-              style={{
-                top: mentionPos.top,
-                left: mentionPos.left,
-              }}
-            >
-              <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
-                <CommandList>
-                  <CommandEmpty className="px-3 py-2 text-xs text-white/60">
-                    No matches.
-                  </CommandEmpty>
-                  <CommandGroup>
-                    {rows.map((row, index) => {
-                      const isActive = index === highlightedIndex
+          {/* Mention popup for title field */}
+          {activeField === 'title' &&
+            activeMention &&
+            mentionPos &&
+            rows.length > 0 && (
+              <div
+                className="absolute z-20 w-72"
+                style={{
+                  top: mentionPos.top,
+                  left: mentionPos.left,
+                }}
+              >
+                <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
+                  <CommandList>
+                    <CommandEmpty className="px-3 py-2 text-xs text-white/60">
+                      No matches.
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {rows.map((row, index) => {
+                        const isActive = index === highlightedIndex
 
-                      if (row.kind === 'typed') {
+                        if (row.kind === 'typed') {
+                          return (
+                            <CommandItem
+                              key="typed-option"
+                              value={row.label}
+                              onSelect={() => {
+                                setActiveMention(null)
+                                setMentionPos(null)
+                                setHighlightedIndex(-1)
+                              }}
+                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                                isActive ? 'bg-purple-500/20' : ''
+                              }`}
+                            >
+                              <span className="text-white">{row.label}</span>
+                              <span className="text-[11px] text-white/60">
+                                {row.description}
+                              </span>
+                            </CommandItem>
+                          )
+                        }
+
+                        if (row.kind === 'priority') {
+                          return (
+                            <CommandItem
+                              key={row.option.code}
+                              value={row.option.token}
+                              onSelect={() => applyMention(row.option.token)}
+                              onMouseEnter={() => setHighlightedIndex(index)}
+                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                                isActive ? 'bg-purple-500/20' : ''
+                              }`}
+                            >
+                              <span className="text-white">
+                                !{row.option.token}
+                              </span>
+                              <span className="text-[11px] text-white/60">
+                                {row.option.label} — {row.option.description}
+                              </span>
+                            </CommandItem>
+                          )
+                        }
+
+                        // suggestion (jar/tag)
                         return (
                           <CommandItem
-                            key="typed-option"
-                            value={row.label}
-                            onSelect={() => {
-                              setActiveMention(null)
-                              setMentionPos(null)
-                              setHighlightedIndex(-1)
-                            }}
-                            className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                              isActive ? 'bg-purple-500/20' : ''
-                            }`}
-                          >
-                            <span className="text-white">{row.label}</span>
-                            <span className="text-[11px] text-white/60">
-                              {row.description}
-                            </span>
-                          </CommandItem>
-                        )
-                      }
-
-                      if (row.kind === 'priority') {
-                        return (
-                          <CommandItem
-                            key={row.option.code}
-                            value={row.option.token}
-                            onSelect={() => applyMention(row.option.token)}
+                            key={row.item.id}
+                            value={row.item.name}
+                            onSelect={() => applyMention(row.item.name)}
                             onMouseEnter={() => setHighlightedIndex(index)}
-                            className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                            data-selected={false}
+                            className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
                               isActive ? 'bg-purple-500/20' : ''
-                            }`}
+                            } text-white`}
                           >
-                            <span className="text-white">
-                              !{row.option.token}
+                            <span>
+                              {currentMention?.type === 'jar' ? '@' : '#'}
+                              {row.item.name}
                             </span>
-                            <span className="text-[11px] text-white/60">
-                              {row.option.label} — {row.option.description}
-                            </span>
+                            {row.item.description && (
+                              <span className="ml-2 text-[11px] text-white/60">
+                                {row.item.description}
+                              </span>
+                            )}
                           </CommandItem>
                         )
-                      }
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            )}
 
-                      // suggestion (jar/tag)
-                      return (
-                        <CommandItem
-                          key={row.item.id}
-                          value={row.item.name}
-                          onSelect={() => applyMention(row.item.name)}
-                          onMouseEnter={() => setHighlightedIndex(index)}
-                          data-selected={false}
-                          className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                            isActive ? 'bg-purple-500/20' : ''
-                          } text-white`}
-                        >
-                          <span>
-                            {currentMention?.type === 'jar' ? '@' : '#'}
-                            {row.item.name}
-                          </span>
-                          {row.item.description && (
-                            <span className="ml-2 text-[11px] text-white/60">
-                              {row.item.description}
-                            </span>
-                          )}
-                        </CommandItem>
-                      )
-                    })}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </div>
-          )}
+          {/* Mention popup for description field - positioned at cursor */}
+          {activeField === 'description' &&
+            descMention &&
+            descMentionPos &&
+            rows.length > 0 && (
+              <div
+                className="absolute z-20 w-72"
+                style={{
+                  top: descMentionPos.top + 60, // Offset for title input + some padding
+                  left: descMentionPos.left,
+                }}
+              >
+                <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
+                  <CommandList>
+                    <CommandEmpty className="px-3 py-2 text-xs text-white/60">
+                      No matches.
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {rows.map((row, index) => {
+                        const isActive = index === highlightedIndex
 
-        {/* Mention popup for description field - positioned at cursor */}
-        {activeField === 'description' &&
-          descMention &&
-          descMentionPos &&
-          rows.length > 0 && (
-            <div
-              className="absolute z-20 w-72"
-              style={{
-                top: descMentionPos.top + 60, // Offset for title input + some padding
-                left: descMentionPos.left,
-              }}
-            >
-              <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
-                <CommandList>
-                  <CommandEmpty className="px-3 py-2 text-xs text-white/60">
-                    No matches.
-                  </CommandEmpty>
-                  <CommandGroup>
-                    {rows.map((row, index) => {
-                      const isActive = index === highlightedIndex
+                        if (row.kind === 'typed') {
+                          return (
+                            <CommandItem
+                              key="typed-option"
+                              value={row.label}
+                              onSelect={() => {
+                                setDescMention(null)
+                                setDescMentionPos(null)
+                                setHighlightedIndex(-1)
+                              }}
+                              onMouseEnter={() => setHighlightedIndex(index)}
+                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                                isActive ? 'bg-purple-500/20' : ''
+                              }`}
+                            >
+                              <span className="text-white">{row.label}</span>
+                              <span className="text-[11px] text-white/60">
+                                {row.description}
+                              </span>
+                            </CommandItem>
+                          )
+                        }
 
-                      if (row.kind === 'typed') {
+                        if (row.kind === 'priority') {
+                          return (
+                            <CommandItem
+                              key={row.option.code}
+                              value={row.option.token}
+                              onSelect={() =>
+                                applyDescriptionMention(row.option.token)
+                              }
+                              onMouseEnter={() => setHighlightedIndex(index)}
+                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                                isActive ? 'bg-purple-500/20' : ''
+                              }`}
+                            >
+                              <span className="text-white">
+                                !{row.option.token}
+                              </span>
+                              <span className="text-[11px] text-white/60">
+                                {row.option.label} — {row.option.description}
+                              </span>
+                            </CommandItem>
+                          )
+                        }
+
+                        // suggestion (jar/tag)
                         return (
                           <CommandItem
-                            key="typed-option"
-                            value={row.label}
-                            onSelect={() => {
-                              setDescMention(null)
-                              setDescMentionPos(null)
-                              setHighlightedIndex(-1)
-                            }}
-                            onMouseEnter={() => setHighlightedIndex(index)}
-                            className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                              isActive ? 'bg-purple-500/20' : ''
-                            }`}
-                          >
-                            <span className="text-white">{row.label}</span>
-                            <span className="text-[11px] text-white/60">
-                              {row.description}
-                            </span>
-                          </CommandItem>
-                        )
-                      }
-
-                      if (row.kind === 'priority') {
-                        return (
-                          <CommandItem
-                            key={row.option.code}
-                            value={row.option.token}
+                            key={row.item.id}
+                            value={row.item.name}
                             onSelect={() =>
-                              applyDescriptionMention(row.option.token)
+                              applyDescriptionMention(row.item.name)
                             }
                             onMouseEnter={() => setHighlightedIndex(index)}
-                            className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
+                            data-selected={false}
+                            className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
                               isActive ? 'bg-purple-500/20' : ''
-                            }`}
+                            } text-white`}
                           >
-                            <span className="text-white">
-                              !{row.option.token}
+                            <span>
+                              {descMention?.type === 'jar' ? '@' : '#'}
+                              {row.item.name}
                             </span>
-                            <span className="text-[11px] text-white/60">
-                              {row.option.label} — {row.option.description}
-                            </span>
+                            {row.item.description && (
+                              <span className="ml-2 text-[11px] text-white/60">
+                                {row.item.description}
+                              </span>
+                            )}
                           </CommandItem>
                         )
-                      }
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            )}
 
-                      // suggestion (jar/tag)
-                      return (
-                        <CommandItem
-                          key={row.item.id}
-                          value={row.item.name}
-                          onSelect={() =>
-                            applyDescriptionMention(row.item.name)
-                          }
-                          onMouseEnter={() => setHighlightedIndex(index)}
-                          data-selected={false}
-                          className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                            isActive ? 'bg-purple-500/20' : ''
-                          } text-white`}
-                        >
-                          <span>
-                            {descMention?.type === 'jar' ? '@' : '#'}
-                            {row.item.name}
-                          </span>
-                          {row.item.description && (
-                            <span className="ml-2 text-[11px] text-white/60">
-                              {row.item.description}
-                            </span>
-                          )}
-                        </CommandItem>
-                      )
-                    })}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </div>
-          )}
-
-        <button
-          type="button"
-          disabled={title.trim().length === 0}
-          onClick={submitTodo}
-          className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:from-purple-500/50 disabled:to-purple-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg shadow-purple-500/20"
-        >
-          Add Todo
-        </button>
-      </div>
+          <button
+            type="button"
+            disabled={title.trim().length === 0}
+            onClick={submitTodo}
+            className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:from-purple-500/50 disabled:to-purple-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg shadow-purple-500/20"
+          >
+            Add Todo
+          </button>
+        </div>
+      )}
 
       {/* Active Todos */}
       <ul className="space-y-2">
