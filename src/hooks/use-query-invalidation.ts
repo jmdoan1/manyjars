@@ -1,26 +1,39 @@
 // src/hooks/use-query-invalidation.ts
 // Shared mutation hooks with automatic cache invalidation for real-time dashboard updates
 
-import { useQueryClient, useMutation } from '@tanstack/react-query'
+import { useQueryClient, useMutation, type QueryClient } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
+
+// Helper to create an invalidation function for a specific router
+function createInvalidator(queryClient: QueryClient, routerName: string) {
+  return () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey as unknown[]
+        return Array.isArray(key[0]) && key[0][0] === routerName
+      }
+    })
+  }
+}
 
 /**
  * Hook that provides todo mutations with automatic cache invalidation.
- * When any mutation succeeds, all todos queries will refetch.
+ * When any mutation succeeds, todos, jars, and tags queries will refetch
+ * (since todos can auto-create jars/tags via @mentions).
  */
 export function useTodoMutations() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
 
-  const invalidateTodos = () => {
-    // Use tRPC's query key format - the first element is the procedure path
-    // tRPC generates keys like: [['todos', 'list'], { input: ... }]
-    queryClient.invalidateQueries({ 
-      predicate: (query) => {
-        const key = query.queryKey as unknown[]
-        return Array.isArray(key[0]) && key[0][0] === 'todos'
-      }
-    })
+  const invalidateTodos = createInvalidator(queryClient, 'todos')
+  const invalidateJars = createInvalidator(queryClient, 'jars')
+  const invalidateTags = createInvalidator(queryClient, 'tags')
+
+  // Invalidate all related entities since todos can create jars/tags via mentions
+  const invalidateAll = () => {
+    invalidateTodos()
+    invalidateJars()
+    invalidateTags()
   }
 
   // Get the base mutation options from tRPC
@@ -31,7 +44,7 @@ export function useTodoMutations() {
   const addTodo = useMutation({
     ...addMutationOptions,
     onSuccess: (...args) => {
-      invalidateTodos()
+      invalidateAll()
       // Chain the original onSuccess if it exists
       addMutationOptions.onSuccess?.(...args)
     },
@@ -40,7 +53,7 @@ export function useTodoMutations() {
   const updateTodo = useMutation({
     ...updateMutationOptions,
     onSuccess: (...args) => {
-      invalidateTodos()
+      invalidateAll()
       updateMutationOptions.onSuccess?.(...args)
     },
   })
@@ -48,7 +61,7 @@ export function useTodoMutations() {
   const deleteTodo = useMutation({
     ...deleteMutationOptions,
     onSuccess: (...args) => {
-      invalidateTodos()
+      invalidateTodos() // Delete only invalidates todos
       deleteMutationOptions.onSuccess?.(...args)
     },
   })
@@ -152,18 +165,22 @@ export function useTagMutations() {
 
 /**
  * Hook that provides note mutations with automatic cache invalidation.
+ * When any mutation succeeds, notes, jars, and tags queries will refetch
+ * (since notes can auto-create jars/tags via @mentions).
  */
 export function useNoteMutations() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
 
-  const invalidateNotes = () => {
-    queryClient.invalidateQueries({ 
-      predicate: (query) => {
-        const key = query.queryKey as unknown[]
-        return Array.isArray(key[0]) && key[0][0] === 'notes'
-      }
-    })
+  const invalidateNotes = createInvalidator(queryClient, 'notes')
+  const invalidateJars = createInvalidator(queryClient, 'jars')
+  const invalidateTags = createInvalidator(queryClient, 'tags')
+
+  // Invalidate all related entities since notes can create jars/tags via mentions
+  const invalidateAll = () => {
+    invalidateNotes()
+    invalidateJars()
+    invalidateTags()
   }
 
   const createMutationOptions = trpc.notes.create.mutationOptions()
@@ -173,7 +190,7 @@ export function useNoteMutations() {
   const createNote = useMutation({
     ...createMutationOptions,
     onSuccess: (...args) => {
-      invalidateNotes()
+      invalidateAll()
       createMutationOptions.onSuccess?.(...args)
     },
   })
@@ -181,7 +198,7 @@ export function useNoteMutations() {
   const updateNote = useMutation({
     ...updateMutationOptions,
     onSuccess: (...args) => {
-      invalidateNotes()
+      invalidateAll()
       updateMutationOptions.onSuccess?.(...args)
     },
   })
@@ -189,7 +206,7 @@ export function useNoteMutations() {
   const deleteNote = useMutation({
     ...deleteMutationOptions,
     onSuccess: (...args) => {
-      invalidateNotes()
+      invalidateNotes() // Delete only invalidates notes
       deleteMutationOptions.onSuccess?.(...args)
     },
   })
