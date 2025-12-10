@@ -6,12 +6,21 @@ import { MentionInput } from "../mentions/mention-input";
 import { MentionEditor } from "../mentions/mention-editor";
 import { parseMentions } from "@/hooks/use-mentions";
 import { useTRPC } from "@/integrations/trpc/react";
+import { ModuleFilter } from "./module-filter";
 import type { ModuleProps } from "@/types/dashboard-types";
 
 export function NotesModule(_props: ModuleProps) {
 	const trpc = useTRPC();
 
-	const { data: notes, refetch } = useQuery(trpc.notes.list.queryOptions());
+	const [filterJars, setFilterJars] = useState<string[]>([]);
+	const [filterTags, setFilterTags] = useState<string[]>([]);
+
+	const { data: notes, refetch } = useQuery(
+		trpc.notes.list.queryOptions({
+			jarIds: filterJars,
+			tagIds: filterTags,
+		}),
+	);
 	const { data: jars } = useQuery(trpc.jars.list.queryOptions());
 	const { data: tags } = useQuery(trpc.tags.list.queryOptions());
 
@@ -110,21 +119,33 @@ export function NotesModule(_props: ModuleProps) {
 	return (
 		<div className="flex flex-col gap-4">
 			{/* Add/Edit Toggle */}
-			<button
-				type="button"
-				onClick={() => {
-					setShowAddForm(!showAddForm);
-					if (showAddForm) resetForm();
-				}}
-				className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
-			>
-				<PlusCircle
-					className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? "rotate-45" : ""}`}
+			<div className="flex items-center justify-between">
+				<button
+					type="button"
+					onClick={() => {
+						setShowAddForm(!showAddForm);
+						if (showAddForm) resetForm();
+					}}
+					className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
+				>
+					<PlusCircle
+						className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? "rotate-45" : ""}`}
+					/>
+					<span className="font-medium">
+						{showAddForm ? "Hide" : editingId ? "Edit Note" : "Add New Note"}
+					</span>
+				</button>
+
+				<ModuleFilter
+					jars={jars ?? []}
+					tags={tags ?? []}
+					onFilterChange={({ jarIds, tagIds }) => {
+						setFilterJars(jarIds);
+						setFilterTags(tagIds);
+					}}
+					showPriority={false}
 				/>
-				<span className="font-medium">
-					{showAddForm ? "Hide" : editingId ? "Edit Note" : "Add New Note"}
-				</span>
-			</button>
+			</div>
 
 			{/* Form */}
 			{showAddForm && (

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Hash, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 import { MentionEditor } from "../mentions/mention-editor"
+import { ModuleFilter } from "./module-filter"
 import {
   validateJarTagName,
 } from '@/hooks/use-mentions'
@@ -12,7 +13,13 @@ import type { ModuleProps } from '@/types/dashboard-types'
 export function TagsModule(_props: ModuleProps) {
   const trpc = useTRPC()
 
-  const { data: tags, refetch } = useQuery(trpc.tags.list.queryOptions())
+  const [filterJars, setFilterJars] = useState<string[]>([])
+
+  const { data: tags, refetch } = useQuery(
+    trpc.tags.list.queryOptions({
+      jarIds: filterJars
+    })
+  )
   const { data: jars } = useQuery(trpc.jars.list.queryOptions())
 
   const [name, setName] = useState('')
@@ -105,19 +112,30 @@ export function TagsModule(_props: ModuleProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Add/Edit Tag Toggle Button */}
-      <button
-        type="button"
-        onClick={() => {
-          setShowAddForm(!showAddForm)
-          if (showAddForm) resetForm()
-        }}
-        className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
-      >
-        <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
-        <span className="font-medium">
-          {showAddForm ? 'Hide' : editingId ? 'Edit Tag' : 'Add New Tag'}
-        </span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => {
+            setShowAddForm(!showAddForm)
+            if (showAddForm) resetForm()
+          }}
+          className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
+        >
+          <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
+          <span className="font-medium">
+            {showAddForm ? 'Hide' : editingId ? 'Edit Tag' : 'Add New Tag'}
+          </span>
+        </button>
+
+        <ModuleFilter
+          jars={jars ?? []}
+          onFilterChange={({ jarIds }) => {
+            setFilterJars(jarIds)
+          }}
+          showPriority={false}
+          hideTags={true}
+        />
+      </div>
 
       {/* Add/Edit Tag Form */}
       {showAddForm && (

@@ -20,14 +20,35 @@ const todoUpsertMetaInput = z.object({
 });
 
 const todosRouter = {
-	list: protectedProcedure.query(async ({ ctx }) => {
-		const todos = await prisma.todo.findMany({
-			where: { userId: ctx.user.id },
-			orderBy: { createdAt: "desc" },
-			include: todoBaseInclude,
-		});
-		return todos;
-	}),
+	list: protectedProcedure
+		.input(
+			z.object({
+				jarIds: z.array(z.string()).optional(),
+				tagIds: z.array(z.string()).optional(),
+				priorities: z.array(priorityEnum).optional(),
+			}).optional()
+		)
+		.query(async ({ ctx, input }) => {
+			const { jarIds, tagIds, priorities } = input || {};
+			const where: any = { userId: ctx.user.id };
+
+			if (jarIds && jarIds.length > 0) {
+				where.jars = { some: { id: { in: jarIds } } };
+			}
+			if (tagIds && tagIds.length > 0) {
+				where.tags = { some: { id: { in: tagIds } } };
+			}
+			if (priorities && priorities.length > 0) {
+				where.priority = { in: priorities };
+			}
+
+			const todos = await prisma.todo.findMany({
+				where,
+				orderBy: { createdAt: "desc" },
+				include: todoBaseInclude,
+			});
+			return todos;
+		}),
 
 	add: protectedProcedure
 		.input(
@@ -170,16 +191,29 @@ const todosRouter = {
 } satisfies TRPCRouterRecord;
 
 const jarsRouter = {
-	list: protectedProcedure.query(async ({ ctx }) => {
-		return prisma.jar.findMany({
-			where: { userId: ctx.user.id },
-			orderBy: { name: "asc" },
-			include: {
-				linkedJars: { include: { targetJar: true } },
-				linkedTags: { include: { tag: true } },
-			},
-		});
-	}),
+	list: protectedProcedure
+		.input(
+			z.object({
+				tagIds: z.array(z.string()).optional(),
+			}).optional()
+		)
+		.query(async ({ ctx, input }) => {
+			const { tagIds } = input || {};
+			const where: any = { userId: ctx.user.id };
+
+			if (tagIds && tagIds.length > 0) {
+				where.linkedTags = { some: { tagId: { in: tagIds } } };
+			}
+
+			return prisma.jar.findMany({
+				where,
+				orderBy: { name: "asc" },
+				include: {
+					linkedJars: { include: { targetJar: true } },
+					linkedTags: { include: { tag: true } },
+				},
+			});
+		}),
 	create: protectedProcedure
 		.input(
 			z.object({
@@ -307,16 +341,29 @@ const jarsRouter = {
 } satisfies TRPCRouterRecord;
 
 const tagsRouter = {
-	list: protectedProcedure.query(async ({ ctx }) => {
-		return prisma.tag.findMany({
-			where: { userId: ctx.user.id },
-			orderBy: { name: "asc" },
-			include: {
-				linkedTags: { include: { targetTag: true } },
-				linkedJars: { include: { jar: true } },
-			},
-		});
-	}),
+	list: protectedProcedure
+		.input(
+			z.object({
+				jarIds: z.array(z.string()).optional(),
+			}).optional()
+		)
+		.query(async ({ ctx, input }) => {
+			const { jarIds } = input || {};
+			const where: any = { userId: ctx.user.id };
+
+			if (jarIds && jarIds.length > 0) {
+				where.linkedJars = { some: { jarId: { in: jarIds } } };
+			}
+
+			return prisma.tag.findMany({
+				where,
+				orderBy: { name: "asc" },
+				include: {
+					linkedTags: { include: { targetTag: true } },
+					linkedJars: { include: { jar: true } },
+				},
+			});
+		}),
 	create: protectedProcedure
 		.input(
 			z.object({
@@ -444,16 +491,33 @@ const tagsRouter = {
 } satisfies TRPCRouterRecord;
 
 const notesRouter = {
-	list: protectedProcedure.query(async ({ ctx }) => {
-		return prisma.note.findMany({
-			where: { userId: ctx.user.id },
-			orderBy: { updatedAt: "desc" },
-			include: {
-				jars: true,
-				tags: true,
-			},
-		});
-	}),
+	list: protectedProcedure
+		.input(
+			z.object({
+				jarIds: z.array(z.string()).optional(),
+				tagIds: z.array(z.string()).optional(),
+			}).optional()
+		)
+		.query(async ({ ctx, input }) => {
+			const { jarIds, tagIds } = input || {};
+			const where: any = { userId: ctx.user.id };
+
+			if (jarIds && jarIds.length > 0) {
+				where.jars = { some: { id: { in: jarIds } } };
+			}
+			if (tagIds && tagIds.length > 0) {
+				where.tags = { some: { id: { in: tagIds } } };
+			}
+
+			return prisma.note.findMany({
+				where,
+				orderBy: { updatedAt: "desc" },
+				include: {
+					jars: true,
+					tags: true,
+				},
+			});
+		}),
 
 	create: protectedProcedure
 		.input(

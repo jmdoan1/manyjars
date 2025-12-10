@@ -12,6 +12,7 @@ import { useTRPC } from '@/integrations/trpc/react'
 import { PlusCircle } from 'lucide-react'
 import { MentionInput } from "../mentions/mention-input"
 import { MentionEditor } from "../mentions/mention-editor"
+import { ModuleFilter } from "./module-filter"
 import type { ModuleProps } from '@/types/dashboard-types'
 import { PRIORITY_LABEL, type PriorityCode } from '@/hooks/use-mentions'
 
@@ -101,7 +102,17 @@ function TodoDescription({
 export function TodosModule(_props: ModuleProps) {
   const trpc = useTRPC()
 
-  const { data: todos, refetch } = useQuery(trpc.todos.list.queryOptions())
+  const [filterJars, setFilterJars] = useState<string[]>([])
+  const [filterTags, setFilterTags] = useState<string[]>([])
+  const [filterPriorities, setFilterPriorities] = useState<string[]>([])
+
+  const { data: todos, refetch } = useQuery(
+    trpc.todos.list.queryOptions({
+      jarIds: filterJars,
+      tagIds: filterTags,
+      priorities: filterPriorities as any,
+    })
+  )
   const { data: jars } = useQuery(trpc.jars.list.queryOptions())
   const { data: tags } = useQuery(trpc.tags.list.queryOptions())
 
@@ -170,16 +181,28 @@ export function TodosModule(_props: ModuleProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Add Todo Toggle Button */}
-      <button
-        type="button"
-        onClick={() => setShowAddForm(!showAddForm)}
-        className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
-      >
-        <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
-        <span className="font-medium">
-          {showAddForm ? 'Hide' : 'Add New Todo'}
-        </span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
+        >
+          <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
+          <span className="font-medium">
+            {showAddForm ? 'Hide' : 'Add New Todo'}
+          </span>
+        </button>
+
+        <ModuleFilter
+          jars={jars ?? []}
+          tags={tags ?? []}
+          onFilterChange={({ jarIds, tagIds, priorities }) => {
+            setFilterJars(jarIds)
+            setFilterTags(tagIds)
+            setFilterPriorities(priorities)
+          }}
+        />
+      </div>
 
       {/* Add Todo Form */}
       {showAddForm && (

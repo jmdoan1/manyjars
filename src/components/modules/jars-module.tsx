@@ -4,12 +4,19 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Archive, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 import { MentionEditor } from "../mentions/mention-editor"
+import { ModuleFilter } from "./module-filter"
 import type { ModuleProps } from '@/types/dashboard-types'
 
 export function JarsModule(_props: ModuleProps) {
   const trpc = useTRPC()
 
-  const { data: jars, refetch } = useQuery(trpc.jars.list.queryOptions())
+  const [filterTags, setFilterTags] = useState<string[]>([])
+
+  const { data: jars, refetch } = useQuery(
+    trpc.jars.list.queryOptions({
+      tagIds: filterTags
+    })
+  )
   const { data: tags } = useQuery(trpc.tags.list.queryOptions())
 
   const [name, setName] = useState('')
@@ -95,19 +102,30 @@ export function JarsModule(_props: ModuleProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Add/Edit Jar Toggle Button */}
-      <button
-        type="button"
-        onClick={() => {
-          setShowAddForm(!showAddForm)
-          if (showAddForm) resetForm()
-        }}
-        className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
-      >
-        <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
-        <span className="font-medium">
-          {showAddForm ? 'Hide' : editingId ? 'Edit Jar' : 'Add New Jar'}
-        </span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => {
+            setShowAddForm(!showAddForm)
+            if (showAddForm) resetForm()
+          }}
+          className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
+        >
+          <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
+          <span className="font-medium">
+            {showAddForm ? 'Hide' : editingId ? 'Edit Jar' : 'Add New Jar'}
+          </span>
+        </button>
+
+        <ModuleFilter
+          tags={tags ?? []}
+          onFilterChange={({ tagIds }) => {
+            setFilterTags(tagIds)
+          }}
+          showPriority={false}
+          hideJars={true}
+        />
+      </div>
 
       {/* Add/Edit Jar Form */}
       {showAddForm && (
