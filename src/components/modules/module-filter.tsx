@@ -12,6 +12,9 @@ type FilterProps = {
     id: string
     name: string
   }[]
+  selectedJarIds?: string[]
+  selectedTagIds?: string[]
+  selectedPriorities?: string[]
   onFilterChange: (filters: {
     jarIds: string[]
     tagIds: string[]
@@ -25,15 +28,15 @@ type FilterProps = {
 export function ModuleFilter({
   jars = [],
   tags = [],
+  selectedJarIds = [],
+  selectedTagIds = [],
+  selectedPriorities = [],
   onFilterChange,
   showPriority = true,
   hideJars = false,
   hideTags = false,
 }: FilterProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedJarIds, setSelectedJarIds] = useState<string[]>([])
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
-  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([])
   
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -52,38 +55,48 @@ export function ModuleFilter({
     }
   }, [])
 
-  /*
-  const handleApply = () => {
+  const handleToggleJar = (id: string) => {
+    const newIds = selectedJarIds.includes(id)
+      ? selectedJarIds.filter((i) => i !== id)
+      : [...selectedJarIds, id]
+    
     onFilterChange({
-      jarIds: selectedJarIds,
+      jarIds: newIds,
       tagIds: selectedTagIds,
       priorities: selectedPriorities,
     })
-    setIsOpen(false) 
   }
-  */
 
-  // Effect to auto-apply filters when they change? Or wait for explicit apply?
-  // User request "multiselect ... filter applied".
-  // Usually auto-apply is nicer for desktop.
-  useEffect(() => {
+  const handleToggleTag = (id: string) => {
+    const newIds = selectedTagIds.includes(id)
+      ? selectedTagIds.filter((i) => i !== id)
+      : [...selectedTagIds, id]
+    
+    onFilterChange({
+      jarIds: selectedJarIds,
+      tagIds: newIds,
+      priorities: selectedPriorities,
+    })
+  }
+
+  const handleTogglePriority = (priority: string) => {
+    const newPriorities = selectedPriorities.includes(priority)
+      ? selectedPriorities.filter((p) => p !== priority)
+      : [...selectedPriorities, priority]
+
     onFilterChange({
       jarIds: selectedJarIds,
       tagIds: selectedTagIds,
-      priorities: selectedPriorities,
+      priorities: newPriorities,
     })
-  }, [selectedJarIds, selectedTagIds, selectedPriorities])
+  }
 
-  const toggleSelection = (
-    id: string,
-    current: string[],
-    set: (val: string[]) => void
-  ) => {
-    if (current.includes(id)) {
-      set(current.filter((i) => i !== id))
-    } else {
-      set([...current, id])
-    }
+  const handleClearAll = () => {
+    onFilterChange({
+      jarIds: [],
+      tagIds: [],
+      priorities: [],
+    })
   }
 
   const activeCount =
@@ -115,11 +128,7 @@ export function ModuleFilter({
             <span className="font-medium text-white">Filters</span>
             {activeCount > 0 && (
               <button
-                onClick={() => {
-                  setSelectedJarIds([])
-                  setSelectedTagIds([])
-                  setSelectedPriorities([])
-                }}
+                onClick={handleClearAll}
                 className="text-xs text-white/50 hover:text-white transition-colors"
               >
                 Clear all
@@ -142,9 +151,7 @@ export function ModuleFilter({
                 return (
                   <button
                     key={jar.id}
-                    onClick={() =>
-                      toggleSelection(jar.id, selectedJarIds, setSelectedJarIds)
-                    }
+                    onClick={() => handleToggleJar(jar.id)}
                     className={`text-xs px-2 py-1 rounded-full border transition-all flex items-center gap-1 ${
                       isSelected
                         ? "bg-purple-500/30 border-purple-500/50 text-purple-100"
@@ -175,9 +182,7 @@ export function ModuleFilter({
                 return (
                   <button
                     key={tag.id}
-                    onClick={() =>
-                      toggleSelection(tag.id, selectedTagIds, setSelectedTagIds)
-                    }
+                    onClick={() => handleToggleTag(tag.id)}
                     className={`text-xs px-2 py-1 rounded-full border transition-all flex items-center gap-1 ${
                       isSelected
                         ? "bg-teal-500/30 border-teal-500/50 text-teal-100"
@@ -206,13 +211,7 @@ export function ModuleFilter({
                     return (
                       <button
                         key={p}
-                        onClick={() =>
-                          toggleSelection(
-                            p,
-                            selectedPriorities,
-                            setSelectedPriorities
-                          )
-                        }
+                        onClick={() => handleTogglePriority(p)}
                         className={`text-xs px-2 py-1 rounded-full border transition-all flex items-center gap-1 ${
                           isSelected
                             ? "bg-blue-500/30 border-blue-500/50 text-blue-100"

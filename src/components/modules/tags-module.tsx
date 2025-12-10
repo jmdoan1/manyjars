@@ -1,5 +1,5 @@
-// src/components/modules/tags-module.tsx
-import { useCallback, useRef, useState } from 'react'
+
+import { useCallback, useRef, useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Hash, PlusCircle, Pencil, Trash2 } from 'lucide-react'
@@ -10,10 +10,21 @@ import {
 } from '@/hooks/use-mentions'
 import type { ModuleProps } from '@/types/dashboard-types'
 
-export function TagsModule(_props: ModuleProps) {
+export function TagsModule(props: ModuleProps) {
   const trpc = useTRPC()
 
-  const [filterJars, setFilterJars] = useState<string[]>([])
+  const [filterJars, setFilterJars] = useState<string[]>(
+    (props.config?.filters as any)?.jarIds ?? []
+  )
+
+  // Persist filters
+  useEffect(() => {
+    props.onConfigChange?.({
+      filters: {
+        jarIds: filterJars,
+      }
+    })
+  }, [filterJars, props.onConfigChange])
 
   const { data: tags, refetch } = useQuery(
     trpc.tags.list.queryOptions({
@@ -129,6 +140,7 @@ export function TagsModule(_props: ModuleProps) {
 
         <ModuleFilter
           jars={jars ?? []}
+          selectedJarIds={filterJars}
           onFilterChange={({ jarIds }) => {
             setFilterJars(jarIds)
           }}

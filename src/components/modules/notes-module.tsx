@@ -1,7 +1,7 @@
-// src/components/modules/notes-module.tsx
+
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { FileText, Pencil, PlusCircle, Trash2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { MentionInput } from "../mentions/mention-input";
 import { MentionEditor } from "../mentions/mention-editor";
 import { parseMentions } from "@/hooks/use-mentions";
@@ -9,11 +9,25 @@ import { useTRPC } from "@/integrations/trpc/react";
 import { ModuleFilter } from "./module-filter";
 import type { ModuleProps } from "@/types/dashboard-types";
 
-export function NotesModule(_props: ModuleProps) {
+export function NotesModule(props: ModuleProps) {
 	const trpc = useTRPC();
 
-	const [filterJars, setFilterJars] = useState<string[]>([]);
-	const [filterTags, setFilterTags] = useState<string[]>([]);
+	const [filterJars, setFilterJars] = useState<string[]>(
+		(props.config?.filters as any)?.jarIds ?? []
+	);
+	const [filterTags, setFilterTags] = useState<string[]>(
+		(props.config?.filters as any)?.tagIds ?? []
+	);
+
+	// Persist filters
+	useEffect(() => {
+		props.onConfigChange?.({
+			filters: {
+				jarIds: filterJars,
+				tagIds: filterTags,
+			}
+		});
+	}, [filterJars, filterTags, props.onConfigChange]);
 
 	const { data: notes, refetch } = useQuery(
 		trpc.notes.list.queryOptions({
@@ -139,6 +153,8 @@ export function NotesModule(_props: ModuleProps) {
 				<ModuleFilter
 					jars={jars ?? []}
 					tags={tags ?? []}
+					selectedJarIds={filterJars}
+					selectedTagIds={filterTags}
 					onFilterChange={({ jarIds, tagIds }) => {
 						setFilterJars(jarIds);
 						setFilterTags(tagIds);

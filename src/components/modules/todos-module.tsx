@@ -5,13 +5,14 @@ import {
   useMemo,
   useRef,
   useState,
+  useEffect,
   type MouseEvent,
 } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
-import { PlusCircle } from 'lucide-react'
-import { MentionInput } from "../mentions/mention-input"
+import { CheckSquare, PlusCircle, Calendar as CalendarIcon, Trash2 } from 'lucide-react'
 import { MentionEditor } from "../mentions/mention-editor"
+import { MentionInput } from "../mentions/mention-input"
 import { ModuleFilter } from "./module-filter"
 import type { ModuleProps } from '@/types/dashboard-types'
 import { PRIORITY_LABEL, type PriorityCode } from '@/hooks/use-mentions'
@@ -99,12 +100,29 @@ function TodoDescription({
   )
 }
 
-export function TodosModule(_props: ModuleProps) {
+export function TodosModule(props: ModuleProps) {
   const trpc = useTRPC()
 
-  const [filterJars, setFilterJars] = useState<string[]>([])
-  const [filterTags, setFilterTags] = useState<string[]>([])
-  const [filterPriorities, setFilterPriorities] = useState<string[]>([])
+  const [filterJars, setFilterJars] = useState<string[]>(
+    (props.config?.filters as any)?.jarIds ?? []
+  )
+  const [filterTags, setFilterTags] = useState<string[]>(
+    (props.config?.filters as any)?.tagIds ?? []
+  )
+  const [filterPriorities, setFilterPriorities] = useState<string[]>(
+    (props.config?.filters as any)?.priorities ?? []
+  )
+
+  // Persist filters when they change
+  useEffect(() => {
+    props.onConfigChange?.({
+      filters: {
+        jarIds: filterJars,
+        tagIds: filterTags,
+        priorities: filterPriorities,
+      }
+    })
+  }, [filterJars, filterTags, filterPriorities, props.onConfigChange])
 
   const { data: todos, refetch } = useQuery(
     trpc.todos.list.queryOptions({
@@ -196,6 +214,9 @@ export function TodosModule(_props: ModuleProps) {
         <ModuleFilter
           jars={jars ?? []}
           tags={tags ?? []}
+          selectedJarIds={filterJars}
+          selectedTagIds={filterTags}
+          selectedPriorities={filterPriorities}
           onFilterChange={({ jarIds, tagIds, priorities }) => {
             setFilterJars(jarIds)
             setFilterTags(tagIds)

@@ -30,6 +30,7 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
     moveModule,
     addModule,
     removeModule,
+    updateModuleConfig,
   } = useDashboard({ moduleDefinitions })
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -240,6 +241,7 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
                        <ModuleComponent
                          moduleId={module.id}
                          config={module.config}
+                         onConfigChange={(newConfig) => updateModuleConfig(module.id, newConfig)}
                        />
                     </div>
                   </DashboardModuleWrapper>

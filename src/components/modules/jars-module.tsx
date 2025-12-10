@@ -1,5 +1,5 @@
-// src/components/modules/jars-module.tsx
-import { useCallback, useRef, useState } from 'react'
+
+import { useCallback, useRef, useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Archive, PlusCircle, Pencil, Trash2 } from 'lucide-react'
@@ -7,10 +7,21 @@ import { MentionEditor } from "../mentions/mention-editor"
 import { ModuleFilter } from "./module-filter"
 import type { ModuleProps } from '@/types/dashboard-types'
 
-export function JarsModule(_props: ModuleProps) {
+export function JarsModule(props: ModuleProps) {
   const trpc = useTRPC()
 
-  const [filterTags, setFilterTags] = useState<string[]>([])
+  const [filterTags, setFilterTags] = useState<string[]>(
+    (props.config?.filters as any)?.tagIds ?? []
+  )
+
+  // Persist filters
+  useEffect(() => {
+    props.onConfigChange?.({
+      filters: {
+        tagIds: filterTags,
+      }
+    })
+  }, [filterTags, props.onConfigChange])
 
   const { data: jars, refetch } = useQuery(
     trpc.jars.list.queryOptions({
@@ -119,6 +130,7 @@ export function JarsModule(_props: ModuleProps) {
 
         <ModuleFilter
           tags={tags ?? []}
+          selectedTagIds={filterTags}
           onFilterChange={({ tagIds }) => {
             setFilterTags(tagIds)
           }}
