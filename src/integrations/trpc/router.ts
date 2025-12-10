@@ -4,6 +4,389 @@ import { prisma } from "@/db";
 import { validateJarTagName, type PriorityCode } from "@/hooks/use-mentions";
 import { extractAndEnsureMentions } from "./mentions-helper";
 import { createTRPCRouter, protectedProcedure } from "./init";
+import { Priority, type Prisma } from "../../generated/prisma/client";
+
+// --- Generic Schemas ---
+
+const stringIdArray = z.array(z.string().uuid()).nonempty();
+
+const dateRangeSchema = z.object({
+	from: z.string().datetime().optional(), // ISO
+	to: z.string().datetime().optional(),
+});
+
+const paginationSchema = z.object({
+	take: z.number().int().min(1).max(100).default(50),
+	skip: z.number().int().min(0).default(0),
+	cursor: z.string().uuid().optional(),
+});
+
+const sortDirectionEnum = z.enum(["asc", "desc"]);
+const nullsEnum = z.enum(["first", "last"]);
+
+// --- Todo Schemas & Helpers ---
+
+const todoFilterSchema = z.object({
+	jarIdsAny: stringIdArray.optional(),
+	tagIdsAny: stringIdArray.optional(),
+	priorityIn: z.nativeEnum(Priority).array().optional(),
+	createdAt: dateRangeSchema.optional(),
+	dueDate: dateRangeSchema.optional(),
+	completedAt: dateRangeSchema.optional(),
+	isCompleted: z.boolean().optional(),
+	textSearch: z.string().max(256).optional(),
+});
+
+const todoSortFieldEnum = z.enum([
+	"createdAt",
+	"dueDate",
+	"priority",
+	"title",
+]);
+
+const todoSortSpecSchema = z.object({
+	field: todoSortFieldEnum,
+	direction: sortDirectionEnum,
+	nulls: nullsEnum.optional(),
+});
+
+const todoListInputSchema = z
+	.object({
+		filter: todoFilterSchema.optional(),
+		sort: todoSortSpecSchema.array().nonempty().optional(),
+		pagination: paginationSchema.optional(),
+		include: z
+			.object({
+				jars: z.boolean().default(true),
+				tags: z.boolean().default(true),
+			})
+			.default({ jars: true, tags: true }),
+	})
+	.optional();
+
+function buildTodoWhere(
+	userId: string,
+	filter?: z.infer<typeof todoFilterSchema>,
+): Prisma.TodoWhereInput {
+	const where: Prisma.TodoWhereInput = { userId };
+
+	if (!filter) return where;
+
+	const {
+		jarIdsAny,
+		tagIdsAny,
+		priorityIn,
+		createdAt,
+		dueDate,
+		completedAt,
+		isCompleted,
+		textSearch,
+	} = filter;
+
+	if (jarIdsAny?.length) {
+		where.jars = { some: { id: { in: jarIdsAny } } };
+	}
+
+	if (tagIdsAny?.length) {
+		where.tags = { some: { id: { in: tagIdsAny } } };
+	}
+
+	if (priorityIn?.length) {
+		where.priority = { in: priorityIn };
+	}
+
+	if (createdAt) {
+		where.createdAt = {
+			gte: createdAt.from ? new Date(createdAt.from) : undefined,
+			lte: createdAt.to ? new Date(createdAt.to) : undefined,
+		};
+	}
+
+	if (dueDate) {
+		where.dueDate = {
+			gte: dueDate.from ? new Date(dueDate.from) : undefined,
+			lte: dueDate.to ? new Date(dueDate.to) : undefined,
+		};
+	}
+
+	if (completedAt) {
+		where.completedAt = {
+			gte: completedAt.from ? new Date(completedAt.from) : undefined,
+			lte: completedAt.to ? new Date(completedAt.to) : undefined,
+		};
+	}
+
+	if (typeof isCompleted === "boolean") {
+		where.completedAt = isCompleted ? { not: null } : null;
+	}
+
+	if (textSearch) {
+		where.OR = [
+			{ title: { contains: textSearch, mode: "insensitive" } },
+			{ description: { contains: textSearch, mode: "insensitive" } },
+		];
+	}
+
+	return where;
+}
+
+function buildTodoOrderBy(
+	sort?: z.infer<typeof todoSortSpecSchema>[],
+): Prisma.TodoOrderByWithRelationInput[] {
+	if (!sort || sort.length === 0) {
+		return [{ createdAt: "desc" }];
+	}
+
+	return sort.map((s) => {
+		if (s.field === "dueDate" && s.nulls) {
+            // Prisma supports specific nulls sorting in some versions or raw queries,
+            // but standard orderBy usually handles nulls based on direction or specific capability.
+			// Depending on Prisma version and DB. user says "Prisma supports nulls first/last via raw, but if you use native driver..."
+            // For now, let's try the object syntax if valid, or fallback to direction.
+            // But wait, the user instructions provided this code:
+            /*
+            if (s.field === "dueDate" && s.nulls) {
+              return {
+                dueDate: s.direction, // simplifying as the prompt suggested standard prisma usage might need care
+              };
+            }
+            */
+           // I'll stick to the requested logic, but standard prisma `dueDate: { sort: 'asc', nulls: 'last' }` syntax works in recent versions
+           // The prompt had:
+           /*
+            if (s.field === "dueDate" && s.nulls) {
+                 return { dueDate: s.direction };
+            }
+           */
+           // But the prompt example code had a comment about using raw.
+           // However, my existing router uses `orderBy.dueDate = { sort: 'asc', nulls: 'last' }` (lines 53, 56).
+           // So I should support that!
+           return { [s.field]: { sort: s.direction, ...(s.nulls ? { nulls: s.nulls } : {}) } } as Prisma.TodoOrderByWithRelationInput;
+		}
+
+		return { [s.field]: s.direction } as Prisma.TodoOrderByWithRelationInput;
+	});
+}
+
+// --- Jar Schemas & Helpers ---
+
+const jarFilterSchema = z.object({
+	tagIdsAny: stringIdArray.optional(),
+	nameContains: z.string().max(256).optional(),
+	createdAt: dateRangeSchema.optional(),
+});
+
+const jarSortFieldEnum = z.enum(["createdAt", "name"]);
+
+const jarSortSpecSchema = z.object({
+	field: jarSortFieldEnum,
+	direction: sortDirectionEnum,
+});
+
+const jarListInputSchema = z
+	.object({
+		filter: jarFilterSchema.optional(),
+		sort: jarSortSpecSchema.array().nonempty().optional(),
+		pagination: paginationSchema.optional(),
+		include: z
+			.object({
+				linkedJars: z.boolean().default(true),
+				linkedTags: z.boolean().default(true),
+			})
+			.default({ linkedJars: true, linkedTags: true }),
+	})
+	.optional();
+
+function buildJarWhere(
+	userId: string,
+	filter?: z.infer<typeof jarFilterSchema>,
+): Prisma.JarWhereInput {
+	const where: Prisma.JarWhereInput = { userId };
+
+	if (!filter) return where;
+
+	const { tagIdsAny, nameContains, createdAt } = filter;
+
+	if (tagIdsAny?.length) {
+		where.linkedTags = { some: { tagId: { in: tagIdsAny } } };
+	}
+
+	if (nameContains) {
+		where.name = { contains: nameContains, mode: "insensitive" };
+	}
+
+	if (createdAt) {
+		where.createdAt = {
+			gte: createdAt.from ? new Date(createdAt.from) : undefined,
+			lte: createdAt.to ? new Date(createdAt.to) : undefined,
+		};
+	}
+
+	return where;
+}
+
+function buildJarOrderBy(
+	sort?: z.infer<typeof jarSortSpecSchema>[],
+): Prisma.JarOrderByWithRelationInput[] {
+	if (!sort || sort.length === 0) {
+		return [{ name: "asc" }];
+	}
+	return sort.map((s) => ({ [s.field]: s.direction }));
+}
+
+// --- Tag Schemas & Helpers ---
+
+const tagFilterSchema = z.object({
+	jarIdsAny: stringIdArray.optional(),
+	nameContains: z.string().max(256).optional(),
+	createdAt: dateRangeSchema.optional(),
+});
+
+const tagSortFieldEnum = z.enum(["createdAt", "name"]);
+
+const tagSortSpecSchema = z.object({
+	field: tagSortFieldEnum,
+	direction: sortDirectionEnum,
+});
+
+const tagListInputSchema = z
+	.object({
+		filter: tagFilterSchema.optional(),
+		sort: tagSortSpecSchema.array().nonempty().optional(),
+		pagination: paginationSchema.optional(),
+		include: z
+			.object({
+				linkedTags: z.boolean().default(true),
+				linkedJars: z.boolean().default(true),
+			})
+			.default({ linkedTags: true, linkedJars: true }),
+	})
+	.optional();
+
+function buildTagWhere(
+	userId: string,
+	filter?: z.infer<typeof tagFilterSchema>,
+): Prisma.TagWhereInput {
+	const where: Prisma.TagWhereInput = { userId };
+
+	if (!filter) return where;
+
+	const { jarIdsAny, nameContains, createdAt } = filter;
+
+	if (jarIdsAny?.length) {
+		where.linkedJars = { some: { jarId: { in: jarIdsAny } } };
+	}
+
+	if (nameContains) {
+		where.name = { contains: nameContains, mode: "insensitive" };
+	}
+
+	if (createdAt) {
+		where.createdAt = {
+			gte: createdAt.from ? new Date(createdAt.from) : undefined,
+			lte: createdAt.to ? new Date(createdAt.to) : undefined,
+		};
+	}
+
+	return where;
+}
+
+function buildTagOrderBy(
+	sort?: z.infer<typeof tagSortSpecSchema>[],
+): Prisma.TagOrderByWithRelationInput[] {
+	if (!sort || sort.length === 0) {
+		return [{ name: "asc" }];
+	}
+	return sort.map((s) => ({ [s.field]: s.direction }));
+}
+
+// --- Note Schemas & Helpers ---
+
+const noteFilterSchema = z.object({
+	jarIdsAny: stringIdArray.optional(),
+	tagIdsAny: stringIdArray.optional(),
+	createdAt: dateRangeSchema.optional(),
+	textSearch: z.string().max(256).optional(),
+});
+
+const noteSortFieldEnum = z.enum(["createdAt", "title"]);
+
+const noteSortSpecSchema = z.object({
+	field: noteSortFieldEnum,
+	direction: sortDirectionEnum,
+});
+
+const noteListInputSchema = z
+	.object({
+		filter: noteFilterSchema.optional(),
+		sort: noteSortSpecSchema.array().nonempty().optional(),
+		pagination: paginationSchema.optional(),
+		include: z
+			.object({
+				jars: z.boolean().default(true),
+				tags: z.boolean().default(true),
+			})
+			.default({ jars: true, tags: true }),
+	})
+	.optional();
+
+function buildNoteWhere(
+	userId: string,
+	filter?: z.infer<typeof noteFilterSchema>,
+): Prisma.NoteWhereInput {
+	const where: Prisma.NoteWhereInput = { userId };
+
+	if (!filter) return where;
+
+	const { jarIdsAny, tagIdsAny, createdAt, textSearch } = filter;
+
+	if (jarIdsAny?.length) {
+		where.jars = { some: { id: { in: jarIdsAny } } };
+	}
+
+	if (tagIdsAny?.length) {
+		where.tags = { some: { id: { in: tagIdsAny } } };
+	}
+
+	if (createdAt) {
+		where.createdAt = {
+			gte: createdAt.from ? new Date(createdAt.from) : undefined,
+			lte: createdAt.to ? new Date(createdAt.to) : undefined,
+		};
+	}
+
+	if (textSearch) {
+		where.OR = [
+			{ title: { contains: textSearch, mode: "insensitive" } },
+			{ content: { contains: textSearch, mode: "insensitive" } },
+		];
+	}
+
+	return where;
+}
+
+function buildNoteOrderBy(
+	sort?: z.infer<typeof noteSortSpecSchema>[],
+): Prisma.NoteOrderByWithRelationInput[] {
+	if (!sort || sort.length === 0) {
+		return [{ createdAt: "desc" }];
+	}
+	return sort.map((s) => ({ [s.field]: s.direction }));
+}
+
+// --- Shared Helper ---
+
+function buildPagination(
+	pagination?: z.infer<typeof paginationSchema>,
+): { take: number; skip: number; cursor?: { id: string } } {
+	if (!pagination) return { take: 50, skip: 0 };
+
+	return {
+		take: pagination.take ?? 50,
+		skip: pagination.skip ?? 0,
+		cursor: pagination.cursor ? { id: pagination.cursor } : undefined,
+	};
+}
 
 const todoBaseInclude = {
 	jars: true,
@@ -22,54 +405,25 @@ const todoUpsertMetaInput = z.object({
 
 const todosRouter = {
 	list: protectedProcedure
-		.input(
-			z.object({
-				jarIds: z.array(z.string()).optional(),
-				tagIds: z.array(z.string()).optional(),
-				priorities: z.array(priorityEnum).optional(),
-				orderBy: z.enum(['created_desc', 'created_asc', 'due_asc', 'due_desc', 'priority_desc']).optional(),
-			}).optional()
-		)
+		.input(todoListInputSchema)
 		.query(async ({ ctx, input }) => {
-			const { jarIds, tagIds, priorities } = input || {};
-			const where: any = { userId: ctx.user.id };
+			const { filter, sort, pagination, include } = input ?? {};
 
-			if (jarIds && jarIds.length > 0) {
-				where.jars = { some: { id: { in: jarIds } } };
-			}
-			if (tagIds && tagIds.length > 0) {
-				where.tags = { some: { id: { in: tagIds } } };
-			}
-			if (priorities && priorities.length > 0) {
-				where.priority = { in: priorities };
-			}
+			const where = buildTodoWhere(ctx.user.id, filter);
+			const orderBy = buildTodoOrderBy(sort);
+			const { take, skip, cursor } = buildPagination(pagination);
 
-			const orderBy: any = {}
-			switch (input?.orderBy) {
-				case 'created_asc':
-					orderBy.createdAt = 'asc'
-					break
-				case 'due_asc':
-					orderBy.dueDate = { sort: 'asc', nulls: 'last' }
-					break
-				case 'due_desc':
-					orderBy.dueDate = { sort: 'desc', nulls: 'last' }
-					break
-				case 'priority_desc':
-					orderBy.priority = 'desc'
-					break
-				case 'created_desc':
-				default:
-					orderBy.createdAt = 'desc'
-					break
-			}
-
-			const todos = await prisma.todo.findMany({
+			return prisma.todo.findMany({
 				where,
-				orderBy: orderBy,
-				include: todoBaseInclude,
+				orderBy,
+				take,
+				skip,
+				cursor,
+				include: {
+					jars: include?.jars ?? true,
+					tags: include?.tags ?? true,
+				},
 			});
-			return todos;
 		}),
 
 	add: protectedProcedure
@@ -216,43 +570,23 @@ const todosRouter = {
 
 const jarsRouter = {
 	list: protectedProcedure
-		.input(
-			z.object({
-				tagIds: z.array(z.string()).optional(),
-				orderBy: z.enum(['created_desc', 'created_asc', 'name_asc', 'name_desc']).optional(),
-			}).optional()
-		)
+		.input(jarListInputSchema)
 		.query(async ({ ctx, input }) => {
-			const { tagIds } = input || {};
-			const where: any = { userId: ctx.user.id };
+			const { filter, sort, pagination, include } = input ?? {};
 
-			if (tagIds && tagIds.length > 0) {
-				where.linkedTags = { some: { tagId: { in: tagIds } } };
-			}
-
-			const orderBy: any = {}
-			switch (input?.orderBy) {
-				case 'created_asc':
-					orderBy.createdAt = 'asc'
-					break
-				case 'created_desc':
-					orderBy.createdAt = 'desc'
-					break
-				case 'name_desc':
-					orderBy.name = 'desc'
-					break
-				case 'name_asc':
-				default:
-					orderBy.name = 'asc'
-					break
-			}
+			const where = buildJarWhere(ctx.user.id, filter);
+			const orderBy = buildJarOrderBy(sort);
+			const { take, skip, cursor } = buildPagination(pagination);
 
 			return prisma.jar.findMany({
 				where,
-				orderBy: orderBy,
+				orderBy,
+				take,
+				skip,
+				cursor,
 				include: {
-					linkedJars: { include: { targetJar: true } },
-					linkedTags: { include: { tag: true } },
+					linkedJars: include?.linkedJars ? { include: { targetJar: true } } : false,
+					linkedTags: include?.linkedTags ? { include: { tag: true } } : false,
 				},
 			});
 		}),
@@ -384,43 +718,23 @@ const jarsRouter = {
 
 const tagsRouter = {
 	list: protectedProcedure
-		.input(
-			z.object({
-				jarIds: z.array(z.string()).optional(),
-				orderBy: z.enum(['created_desc', 'created_asc', 'name_asc', 'name_desc']).optional(),
-			}).optional()
-		)
+		.input(tagListInputSchema)
 		.query(async ({ ctx, input }) => {
-			const { jarIds } = input || {};
-			const where: any = { userId: ctx.user.id };
+			const { filter, sort, pagination, include } = input ?? {};
 
-			if (jarIds && jarIds.length > 0) {
-				where.linkedJars = { some: { jarId: { in: jarIds } } };
-			}
-
-			const orderBy: any = {}
-			switch (input?.orderBy) {
-				case 'created_asc':
-					orderBy.createdAt = 'asc'
-					break
-				case 'created_desc':
-					orderBy.createdAt = 'desc'
-					break
-				case 'name_desc':
-					orderBy.name = 'desc'
-					break
-				case 'name_asc':
-				default:
-					orderBy.name = 'asc'
-					break
-			}
+			const where = buildTagWhere(ctx.user.id, filter);
+			const orderBy = buildTagOrderBy(sort);
+			const { take, skip, cursor } = buildPagination(pagination);
 
 			return prisma.tag.findMany({
 				where,
-				orderBy: orderBy,
+				orderBy,
+				take,
+				skip,
+				cursor,
 				include: {
-					linkedTags: { include: { targetTag: true } },
-					linkedJars: { include: { jar: true } },
+					linkedTags: include?.linkedTags ? { include: { targetTag: true } } : false,
+					linkedJars: include?.linkedJars ? { include: { jar: true } } : false,
 				},
 			});
 		}),
@@ -552,48 +866,23 @@ const tagsRouter = {
 
 const notesRouter = {
 	list: protectedProcedure
-		.input(
-			z.object({
-				jarIds: z.array(z.string()).optional(),
-				tagIds: z.array(z.string()).optional(),
-				orderBy: z.enum(['created_desc', 'created_asc', 'title_asc', 'title_desc']).optional(),
-			}).optional()
-		)
+		.input(noteListInputSchema)
 		.query(async ({ ctx, input }) => {
-			const { jarIds, tagIds } = input || {};
-			const where: any = { userId: ctx.user.id };
+			const { filter, sort, pagination, include } = input ?? {};
 
-			if (jarIds && jarIds.length > 0) {
-				where.jars = { some: { id: { in: jarIds } } };
-			}
-
-			if (tagIds && tagIds.length > 0) {
-				where.tags = { some: { id: { in: tagIds } } };
-			}
-
-			const orderBy: any = {}
-			switch (input?.orderBy) {
-				case 'created_asc':
-					orderBy.createdAt = 'asc'
-					break
-				case 'title_asc':
-					orderBy.title = 'asc'
-					break
-				case 'title_desc':
-					orderBy.title = 'desc'
-					break
-				case 'created_desc':
-				default:
-					orderBy.createdAt = 'desc'
-					break
-			}
+			const where = buildNoteWhere(ctx.user.id, filter);
+			const orderBy = buildNoteOrderBy(sort);
+			const { take, skip, cursor } = buildPagination(pagination);
 
 			return await prisma.note.findMany({
 				where,
-				orderBy: orderBy,
+				orderBy,
+				take,
+				skip,
+				cursor,
 				include: {
-					jars: true,
-					tags: true,
+					jars: include?.jars ?? true,
+					tags: include?.tags ?? true,
 				},
 			});
 		}),

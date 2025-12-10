@@ -39,11 +39,25 @@ export function NotesModule(props: ModuleProps) {
 		}
 	}, [filterJars, filterTags, filterSort, props.onConfigChange]);
 
+    const getSort = (sortKey: string) => {
+      switch (sortKey) {
+        case 'created_asc': return [{ field: 'createdAt' as const, direction: 'asc' as const }];
+        case 'created_desc': return [{ field: 'createdAt' as const, direction: 'desc' as const }];
+        case 'title_asc': return [{ field: 'title' as const, direction: 'asc' as const }];
+        case 'title_desc': return [{ field: 'title' as const, direction: 'desc' as const }];
+        default: return [{ field: 'createdAt' as const, direction: 'desc' as const }];
+      }
+    }
+
 	const { data: notes, refetch } = useQuery(
 		trpc.notes.list.queryOptions({
-			jarIds: filterJars,
-			tagIds: filterTags,
-			orderBy: filterSort as any,
+			filter: {
+				jarIdsAny: filterJars.length > 0 ? filterJars : undefined,
+				tagIdsAny: filterTags.length > 0 ? filterTags : undefined,
+			},
+			sort: getSort(filterSort) as any,
+			pagination: { take: 100 },
+			include: { jars: true, tags: true },
 		}),
 	);
 	const { data: jars } = useQuery(trpc.jars.list.queryOptions());

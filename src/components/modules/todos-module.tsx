@@ -135,12 +135,25 @@ export function TodosModule(props: ModuleProps) {
     }
   }, [filterJars, filterTags, filterPriorities, filterSort, props.onConfigChange, props.config])
 
-  const { data: todos, refetch } = useQuery(
+    const getSort = (sortKey: string) => {
+      switch (sortKey) {
+        case 'created_asc': return [{ field: 'createdAt' as const, direction: 'asc' as const }];
+        case 'due_asc': return [{ field: 'dueDate' as const, direction: 'asc' as const, nulls: 'last' as const }];
+        case 'due_desc': return [{ field: 'dueDate' as const, direction: 'desc' as const, nulls: 'last' as const }];
+        case 'priority_desc': return [{ field: 'priority' as const, direction: 'desc' as const }];
+        case 'created_desc': default: return [{ field: 'createdAt' as const, direction: 'desc' as const }];
+      }
+    }
+
+    const { data: todos, refetch } = useQuery(
     trpc.todos.list.queryOptions({
-      jarIds: filterJars,
-      tagIds: filterTags,
-      priorities: filterPriorities as any,
-      orderBy: filterSort as any,
+      filter: {
+        jarIdsAny: filterJars.length > 0 ? filterJars : undefined,
+        tagIdsAny: filterTags.length > 0 ? filterTags : undefined,
+        priorityIn: filterPriorities.length > 0 ? (filterPriorities as any) : undefined,
+      },
+      sort: getSort(filterSort) as any,
+      pagination: { take: 100 },
     }),
   )
   const { data: jars } = useQuery(trpc.jars.list.queryOptions())

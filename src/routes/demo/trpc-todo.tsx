@@ -146,10 +146,10 @@ function TRPCTodos() {
   const trpc = useTRPC()
 
   const { data: todos, refetch } = useQuery(
-    trpc.todos.list.queryOptions(),
+    trpc.todos.list.queryOptions({ pagination: { take: 100 } }),
   )
-  const { data: jars } = useQuery(trpc.jars.list.queryOptions())
-  const { data: tags } = useQuery(trpc.tags.list.queryOptions())
+  const { data: jars } = useQuery(trpc.jars.list.queryOptions({ pagination: { take: 100 } }))
+  const { data: tags } = useQuery(trpc.tags.list.queryOptions({ pagination: { take: 100 } }))
 
   const [title, setTitle] = useState('')
   const [descriptionHtml, setDescriptionHtml] = useState('')
@@ -324,7 +324,7 @@ function TRPCTodos() {
   const query = currentMention?.query ?? ''
 
   // Base list for jar/tag suggestions
-  const jarOrTagList =
+  const jarOrTagList: any[] =
     currentMention?.type === 'jar'
       ? jars ?? []
       : currentMention?.type === 'tag'

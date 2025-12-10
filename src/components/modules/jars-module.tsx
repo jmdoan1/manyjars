@@ -34,13 +34,28 @@ export function JarsModule(props: ModuleProps) {
     }
   }, [filterTags, filterSort, props.onConfigChange])
 
+    const getSort = (sortKey: string) => {
+      switch (sortKey) {
+        case 'created_asc': return [{ field: 'createdAt' as const, direction: 'asc' as const }];
+        case 'created_desc': return [{ field: 'createdAt' as const, direction: 'desc' as const }];
+        case 'name_desc': return [{ field: 'name' as const, direction: 'desc' as const }];
+        case 'name_asc': default: return [{ field: 'name' as const, direction: 'asc' as const }];
+      }
+    }
+
   const { data: jars, refetch } = useQuery(
     trpc.jars.list.queryOptions({
-      tagIds: filterTags,
-      orderBy: filterSort as any,
+      filter: {
+        tagIdsAny: filterTags.length > 0 ? filterTags : undefined,
+      },
+      sort: getSort(filterSort),
+      pagination: { take: 100 },
+      include: { linkedJars: true, linkedTags: true },
     })
   )
-  const { data: tags } = useQuery(trpc.tags.list.queryOptions())
+  const { data: tags } = useQuery(trpc.tags.list.queryOptions({
+    pagination: { take: 100 },
+  }))
 
   const [name, setName] = useState('')
   const [descriptionHtml, setDescriptionHtml] = useState('')
@@ -254,20 +269,20 @@ export function JarsModule(props: ModuleProps) {
                 )}
                 {(jar.linkedJars.length > 0 || jar.linkedTags.length > 0) && (
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {jar.linkedJars.map((link) => (
+                    {jar.linkedJars?.map((link: any) => (
                       <span
                         key={link.id}
                         className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20"
                       >
-                        @{link.targetJar.name}
+                        @{link.targetJar?.name}
                       </span>
                     ))}
-                    {jar.linkedTags.map((link) => (
+                    {jar.linkedTags?.map((link: any) => (
                       <span
                         key={link.id}
                         className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20"
                       >
-                        #{link.tag.name}
+                        #{link.tag?.name}
                       </span>
                     ))}
                   </div>
