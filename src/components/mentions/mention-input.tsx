@@ -65,6 +65,7 @@ export function MentionInput({
         currentType={mention.activeMention?.type}
         onSelectRow={mention.applyMention}
         onHoverIndex={mention.setHighlightedIndex}
+        onClickOutside={mention.close}
       />
     </div>
   )

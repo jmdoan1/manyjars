@@ -150,13 +150,10 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
     try {
       const { from } = editor.state.selection;
       const coords = editor.view.coordsAtPos(from);
-      const containerRect = containerRef.current?.getBoundingClientRect();
-      
-      if (!containerRect) return null;
       
       return {
-        top: coords.bottom - containerRect.top + 4,
-        left: coords.left - containerRect.left,
+        top: coords.bottom + 4,
+        left: coords.left,
       };
     } catch {
       return null;

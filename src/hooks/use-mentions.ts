@@ -443,8 +443,8 @@ export function useInputMention({
       // Simple approximation - could be improved with textarea-caret
       const charWidth = 8 // approximate
       suggestions.setMentionPosition({
-        top: rect.height + 4,
-        left: Math.min(caret * charWidth, rect.width - 100),
+        top: rect.bottom + 4,
+        left: rect.left + Math.min(caret * charWidth, rect.width - 100),
       })
     }
   }, [inputRef, value, suggestions])

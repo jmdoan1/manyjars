@@ -1,4 +1,5 @@
-
+import { useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Command,
   CommandEmpty,
@@ -16,6 +17,7 @@ interface MentionPopupProps {
   currentType?: 'jar' | 'tag' | 'priority'
   onSelectRow: (row: MentionRow) => void
   onHoverIndex?: (index: number) => void
+  onClickOutside?: () => void
   className?: string
 }
 
@@ -27,14 +29,39 @@ export function MentionPopup({
   currentType,
   onSelectRow,
   onHoverIndex,
+  onClickOutside,
   className = '',
 }: MentionPopupProps) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        onClickOutside?.()
+      }
+    }
+
+    if (visible) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [visible, onClickOutside])
+
   if (!visible || !position || rows.length === 0) return null
 
-  return (
+  // Use createPortal to render outside of the container to avoid overflow
+  // Note: Position provided must be relative to the viewport/document body
+  return createPortal(
     <div
-      className={`absolute z-50 w-72 ${className}`}
-      style={{ top: position.top, left: position.left }}
+      ref={ref}
+      className={`fixed z-[9999] w-72 ${className}`}
+      style={{
+        top: position.top,
+        left: position.left,
+      }}
     >
       <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
         <CommandList>
@@ -115,6 +142,7 @@ export function MentionPopup({
           </CommandGroup>
         </CommandList>
       </Command>
-    </div>
+    </div>,
+    document.body
   )
 }

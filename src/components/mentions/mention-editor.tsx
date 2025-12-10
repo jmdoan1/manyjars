@@ -111,6 +111,7 @@ export const MentionEditor = forwardRef<MentionEditorHandle, MentionEditorProps>
           currentType={mention.activeMention?.type}
           onSelectRow={applyMention}
           onHoverIndex={mention.setHighlightedIndex}
+          onClickOutside={mention.close}
           // Adjust position for editor if needed, or pass class to popup
           className="" 
         />
