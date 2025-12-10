@@ -1,5 +1,6 @@
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useNoteMutations } from "@/hooks/use-query-invalidation";
 import { FileText, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useCallback, useState, useEffect } from "react";
 import { EntityPills } from "./entity-pills"
@@ -50,7 +51,7 @@ export function NotesModule(props: ModuleProps) {
       }
     }
 
-	const { data: notes, refetch } = useQuery(
+	const { data: notes } = useQuery(
 		trpc.notes.list.queryOptions({
 			filter: {
 				jarIdsAny: filterJars.length > 0 ? filterJars : undefined,
@@ -71,28 +72,8 @@ export function NotesModule(props: ModuleProps) {
 	const [showAddForm, setShowAddForm] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
 
-	const { mutate: addNote } = useMutation({
-		...trpc.notes.create.mutationOptions(),
-		onSuccess: () => {
-			refetch();
-			resetForm();
-		},
-	});
-
-	const { mutate: updateNote } = useMutation({
-		...trpc.notes.update.mutationOptions(),
-		onSuccess: () => {
-			refetch();
-			resetForm();
-		},
-	});
-
-	const { mutate: deleteNote } = useMutation({
-		...trpc.notes.delete.mutationOptions(),
-		onSuccess: () => {
-			refetch();
-		},
-	});
+	// Use shared mutations with automatic cache invalidation
+	const { createNote, updateNote, deleteNote } = useNoteMutations();
 
 	const resetForm = useCallback(() => {
 		setTitle("");
@@ -119,22 +100,22 @@ export function NotesModule(props: ModuleProps) {
 		);
 
 		if (editingId) {
-			updateNote({
+			updateNote.mutate({
 				id: editingId,
 				title: title || undefined,
 				content: contentHtml,
 				jars: jarNames.length ? jarNames : undefined,
 				tags: tagNames.length ? tagNames : undefined,
-			});
+			}, { onSuccess: resetForm });
 		} else {
-			addNote({
+			createNote.mutate({
 				title: title || undefined,
 				content: contentHtml,
 				jars: jarNames.length ? jarNames : undefined,
 				tags: tagNames.length ? tagNames : undefined,
-			});
+			}, { onSuccess: resetForm });
 		}
-	}, [title, contentHtml, contentText, editingId, addNote, updateNote]);
+	}, [title, contentHtml, contentText, editingId, createNote, updateNote, resetForm]);
 
 	const handleEdit = useCallback((note: NonNullable<typeof notes>[number]) => {
 		setEditingId(note.id);
@@ -148,7 +129,7 @@ export function NotesModule(props: ModuleProps) {
 	const handleDelete = useCallback(
 		(id: string) => {
 			if (confirm("Are you sure you want to delete this note?")) {
-				deleteNote({ id });
+				deleteNote.mutate({ id });
 			}
 		},
 		[deleteNote],

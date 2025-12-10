@@ -3,12 +3,12 @@
 import {
   useCallback,
   useMemo,
-  useRef,
   useState,
   useEffect,
   type MouseEvent,
 } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { useTodoMutations } from '@/hooks/use-query-invalidation'
 import { useTRPC } from '@/integrations/trpc/react'
 import { CheckSquare, PlusCircle, Calendar as CalendarIcon, Trash2, Pencil } from 'lucide-react'
 import { EntityPills } from "./entity-pills"
@@ -146,7 +146,7 @@ export function TodosModule(props: ModuleProps) {
       }
     }
 
-    const { data: todos, refetch } = useQuery(
+    const { data: todos } = useQuery(
     trpc.todos.list.queryOptions({
       filter: {
         jarIdsAny: filterJars.length > 0 ? filterJars : undefined,
@@ -173,35 +173,10 @@ export function TodosModule(props: ModuleProps) {
   const [showCompleted, setShowCompleted] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
 
-  const titleRef = useRef<HTMLInputElement | null>(null)
 
-  const { mutate: addTodo } = useMutation({
-    ...trpc.todos.add.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-      resetForm()
-      
-      // Re-focus on title input for smooth consecutive todo entry
-      requestAnimationFrame(() => {
-        titleRef.current?.focus()
-      })
-    },
-  })
 
-  const { mutate: updateTodo } = useMutation({
-    ...trpc.todos.update.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-      if (editingId) resetForm()
-    },
-  })
-
-  const { mutate: deleteTodo } = useMutation({
-    ...trpc.todos.delete.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-    },
-  })
+  // Use shared mutations with automatic cache invalidation
+  const { addTodo, updateTodo, deleteTodo } = useTodoMutations()
 
   const resetForm = useCallback(() => {
     setTitle('')
@@ -223,18 +198,18 @@ export function TodosModule(props: ModuleProps) {
     if (!parsed.title) return
 
     if (editingId) {
-       updateTodo({
+       updateTodo.mutate({
          id: editingId,
          title: parsed.title,
          description: descriptionHtml || undefined,
          dueDate: dueDate || undefined,
-       })
+       }, { onSuccess: resetForm })
     } else {
-       addTodo({
+       addTodo.mutate({
          title: parsed.title,
          description: descriptionHtml || undefined,
          dueDate: dueDate || undefined,
-       })
+       }, { onSuccess: resetForm })
     }
   }
 
@@ -403,7 +378,7 @@ export function TodosModule(props: ModuleProps) {
                   {todo.description && (
                     <TodoDescription 
                       html={todo.description} 
-                      onUpdate={(newHtml) => updateTodo({ id: todo.id, description: newHtml })}
+                      onUpdate={(newHtml) => updateTodo.mutate({ id: todo.id, description: newHtml })}
                       className="text-sm text-white/70 prose prose-sm prose-invert max-w-none"
                     />
                   )}
@@ -430,7 +405,7 @@ export function TodosModule(props: ModuleProps) {
                       {/* Right: Actions */}
                       <div className="flex gap-1">
                         <button
-                          onClick={() => updateTodo({ id: todo.id, completedAt: new Date() })}
+                          onClick={() => updateTodo.mutate({ id: todo.id, completedAt: new Date() })}
                           className="p-1.5 text-white/40 hover:text-green-400 hover:bg-green-400/10 rounded transition-all"
                           title="Mark as done"
                         >
@@ -445,7 +420,7 @@ export function TodosModule(props: ModuleProps) {
                         </button>
                         <button
                           onClick={() => {
-                             if (confirm('Delete this todo?')) deleteTodo({ id: todo.id })
+                             if (confirm('Delete this todo?')) deleteTodo.mutate({ id: todo.id })
                           }}
                           className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
                           title="Delete todo"
@@ -530,7 +505,7 @@ export function TodosModule(props: ModuleProps) {
                               {/* Right: Actions */}
                               <div className="flex gap-1">
                                 <button
-                                  onClick={() => updateTodo({ id: todo.id, completedAt: null })}
+                                  onClick={() => updateTodo.mutate({ id: todo.id, completedAt: null })}
                                   className="p-1.5 text-green-400/50 hover:text-green-400 hover:bg-green-400/10 rounded transition-all"
                                   title="Mark as not done"
                                 >
@@ -538,7 +513,7 @@ export function TodosModule(props: ModuleProps) {
                                 </button>
                                 <button
                                   onClick={() => {
-                                     if (confirm('Delete this todo?')) deleteTodo({ id: todo.id })
+                                     if (confirm('Delete this todo?')) deleteTodo.mutate({ id: todo.id })
                                   }}
                                   className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
                                   title="Delete todo"

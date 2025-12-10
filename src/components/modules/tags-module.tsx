@@ -1,6 +1,7 @@
 
-import { useCallback, useRef, useState, useEffect } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useCallback, useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useTagMutations } from '@/hooks/use-query-invalidation'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Hash, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 import { EntityPills } from "./entity-pills"
@@ -47,7 +48,7 @@ export function TagsModule(props: ModuleProps) {
       }
     }
 
-  const { data: tags, refetch } = useQuery(
+  const { data: tags } = useQuery(
     trpc.tags.list.queryOptions({
       filter: {
         jarIdsAny: filterJars.length > 0 ? filterJars : undefined,
@@ -66,38 +67,9 @@ export function TagsModule(props: ModuleProps) {
   const [editorKey, setEditorKey] = useState(0)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  // Use shared mutations with automatic cache invalidation
+  const { createTag, updateTag, deleteTag } = useTagMutations()
   const [nameError, setNameError] = useState<string | null>(null)
-
-
-
-  const { mutate: addTag } = useMutation({
-    ...trpc.tags.create.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-      resetForm()
-    },
-    onError: (error) => {
-      setNameError(error.message)
-    },
-  })
-
-  const { mutate: updateTag } = useMutation({
-    ...trpc.tags.update.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-      resetForm()
-    },
-    onError: (error) => {
-      setNameError(error.message)
-    },
-  })
-
-  const { mutate: deleteTag } = useMutation({
-    ...trpc.tags.delete.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-    },
-  })
 
   const resetForm = useCallback(() => {
     setName('')
@@ -119,18 +91,24 @@ export function TagsModule(props: ModuleProps) {
     }
 
     if (editingId) {
-      updateTag({
+      updateTag.mutate({
         id: editingId,
         name,
         description: descriptionHtml || null,
+      }, {
+        onSuccess: resetForm,
+        onError: (error) => setNameError(error.message),
       })
     } else {
-      addTag({
+      createTag.mutate({
         name,
         description: descriptionHtml || undefined,
+      }, {
+        onSuccess: resetForm,
+        onError: (error) => setNameError(error.message),
       })
     }
-  }, [name, descriptionHtml, editingId, addTag, updateTag])
+  }, [name, descriptionHtml, editingId, createTag, updateTag, resetForm])
 
   const handleEdit = useCallback((tag: NonNullable<typeof tags>[number]) => {
     setEditingId(tag.id)
@@ -142,7 +120,7 @@ export function TagsModule(props: ModuleProps) {
 
   const handleDelete = useCallback((id: string) => {
     if (confirm('Are you sure you want to delete this tag?')) {
-      deleteTag({ id })
+      deleteTag.mutate({ id })
     }
   }, [deleteTag])
 

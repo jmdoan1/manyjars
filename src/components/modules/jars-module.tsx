@@ -1,6 +1,6 @@
-
-import { useCallback, useRef, useState, useEffect } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useCallback, useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useJarMutations } from '@/hooks/use-query-invalidation'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Archive, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 import { EntityPills } from "./entity-pills"
@@ -44,7 +44,7 @@ export function JarsModule(props: ModuleProps) {
       }
     }
 
-  const { data: jars, refetch } = useQuery(
+  const { data: jars } = useQuery(
     trpc.jars.list.queryOptions({
       filter: {
         tagIdsAny: filterTags.length > 0 ? filterTags : undefined,
@@ -63,36 +63,9 @@ export function JarsModule(props: ModuleProps) {
   const [editorKey, setEditorKey] = useState(0)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  // Use shared mutations with automatic cache invalidation
+  const { createJar, updateJar, deleteJar } = useJarMutations()
   const [nameError, setNameError] = useState<string | null>(null)
-
-  const { mutate: addJar } = useMutation({
-    ...trpc.jars.create.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-      resetForm()
-    },
-    onError: (error) => {
-      setNameError(error.message)
-    },
-  })
-
-  const { mutate: updateJar } = useMutation({
-    ...trpc.jars.update.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-      resetForm()
-    },
-    onError: (error) => {
-      setNameError(error.message)
-    },
-  })
-
-  const { mutate: deleteJar } = useMutation({
-    ...trpc.jars.delete.mutationOptions(),
-    onSuccess: () => {
-      refetch()
-    },
-  })
 
   const resetForm = useCallback(() => {
     setName('')
@@ -109,18 +82,24 @@ export function JarsModule(props: ModuleProps) {
     }
 
     if (editingId) {
-      updateJar({
+      updateJar.mutate({
         id: editingId,
         name,
         description: descriptionHtml || null,
+      }, {
+        onSuccess: resetForm,
+        onError: (error) => setNameError(error.message),
       })
     } else {
-      addJar({
+      createJar.mutate({
         name,
         description: descriptionHtml || undefined,
+      }, {
+        onSuccess: resetForm,
+        onError: (error) => setNameError(error.message),
       })
     }
-  }, [name, descriptionHtml, editingId, addJar, updateJar])
+  }, [name, descriptionHtml, editingId, createJar, updateJar, resetForm])
 
   const handleEdit = useCallback((jar: NonNullable<typeof jars>[number]) => {
     setEditingId(jar.id)
@@ -132,7 +111,7 @@ export function JarsModule(props: ModuleProps) {
 
   const handleDelete = useCallback((id: string) => {
     if (confirm('Are you sure you want to delete this jar?')) {
-      deleteJar({ id })
+      deleteJar.mutate({ id })
     }
   }, [deleteJar])
 
