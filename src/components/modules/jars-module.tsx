@@ -3,6 +3,7 @@ import { useCallback, useRef, useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Archive, PlusCircle, Pencil, Trash2 } from 'lucide-react'
+import { EntityPills } from "./entity-pills"
 import { MentionEditor } from "../mentions/mention-editor"
 import { ModuleFilter } from "./module-filter"
 import type { ModuleProps } from '@/types/dashboard-types'
@@ -263,27 +264,12 @@ export function JarsModule(props: ModuleProps) {
                     dangerouslySetInnerHTML={{ __html: jar.description }}
                   />
                 )}
-                {(jar.linkedJars.length > 0 || jar.linkedTags.length > 0) && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {jar.linkedJars?.map((link: any) => (
-                      <span
-                        key={link.id}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20"
-                      >
-                        @{link.targetJar?.name}
-                      </span>
-                    ))}
-                    {jar.linkedTags?.map((link: any) => (
-                      <span
-                        key={link.id}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20"
-                      >
-                        #{link.tag?.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
                 
+                <EntityPills 
+                  jars={jar.linkedJars.map((l: any) => l.targetJar)} 
+                  tags={jar.linkedTags.map((l: any) => l.tag)}
+                />
+
                 {/* Footer Row: Date & Actions */}
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
                     {/* Left: Date */}

@@ -2,6 +2,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { FileText, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useCallback, useState, useEffect } from "react";
+import { EntityPills } from "./entity-pills"
 import { MentionInput } from "../mentions/mention-input";
 import { MentionEditor } from "../mentions/mention-editor";
 import { parseMentions } from "@/hooks/use-mentions";
@@ -286,27 +287,7 @@ export function NotesModule(props: ModuleProps) {
 									dangerouslySetInnerHTML={{ __html: note.content }}
 								/>
                                 
-                                {/* Tags/Jars */}
-                                {(note.jars.length > 0 || note.tags.length > 0) && (
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                        {note.jars.map((j) => (
-                                            <span
-                                                key={j.id}
-                                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20"
-                                            >
-                                                @{j.name}
-                                            </span>
-                                        ))}
-                                        {note.tags.map((t) => (
-                                            <span
-                                                key={t.id}
-                                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20"
-                                            >
-                                                #{t.name}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
+                                <EntityPills jars={note.jars} tags={note.tags} />
                                 
                                 {/* Footer Row: Date & Actions */}
                                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">

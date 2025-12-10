@@ -11,6 +11,7 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { CheckSquare, PlusCircle, Calendar as CalendarIcon, Trash2, Pencil } from 'lucide-react'
+import { EntityPills } from "./entity-pills"
 import { MentionEditor } from "../mentions/mention-editor"
 import { MentionInput } from "../mentions/mention-input"
 import { ModuleFilter } from "./module-filter"
@@ -406,6 +407,9 @@ export function TodosModule(props: ModuleProps) {
                       className="text-sm text-white/70 prose prose-sm prose-invert max-w-none"
                     />
                   )}
+
+                  {/* Pills */}
+                  <EntityPills jars={todo.jars} tags={todo.tags} />
 
                   {/* Footer Row: Date & Actions */}
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
