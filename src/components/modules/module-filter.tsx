@@ -1,7 +1,8 @@
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Filter, Check } from "lucide-react"
 import { PRIORITY_LABEL, type PriorityCode } from "@/hooks/use-mentions"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 type FilterProps = {
   jars?: {
@@ -37,23 +38,6 @@ export function ModuleFilter({
   hideTags = false,
 }: FilterProps) {
   const [isOpen, setIsOpen] = useState(false)
-  
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
 
   const handleToggleJar = (id: string) => {
     const newIds = selectedJarIds.includes(id)
@@ -103,29 +87,34 @@ export function ModuleFilter({
     selectedJarIds.length + selectedTagIds.length + selectedPriorities.length
 
   return (
-    <div className="relative" ref={containerRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all ${
-          activeCount > 0
-            ? "bg-purple-500/20 border-purple-500/50 text-purple-200"
-            : "bg-white/5 border-white/10 text-white/70 hover:text-white"
-        }`}
-      >
-        <Filter className="w-4 h-4" />
-        <span>Filter</span>
-        {activeCount > 0 && (
-          <span className="bg-purple-500 text-white text-[10px] px-1.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center">
-            {activeCount}
-          </span>
-        )}
-      </button>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all ${
+            activeCount > 0
+              ? "bg-purple-500/20 border-purple-500/50 text-purple-200"
+              : "bg-white/5 border-white/10 text-white/70 hover:text-white"
+          }`}
+        >
+          <Filter className="w-4 h-4" />
+          <span>Filter</span>
+          {activeCount > 0 && (
+            <span className="bg-purple-500 text-white text-[10px] px-1.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center">
+              {activeCount}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-72 max-h-[80vh] overflow-y-auto bg-[#1a1b26] border border-white/10 rounded-xl shadow-xl z-50 p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+      <PopoverContent 
+        className="w-72 bg-[#1a1b26] border-white/10 text-white p-4 max-h-[80vh] overflow-y-auto" 
+        align="end"
+        sideOffset={8}
+      >
+        <div className="flex flex-col gap-4">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
-            <span className="font-medium text-white">Filters</span>
+            <span className="font-medium">Filters</span>
             {activeCount > 0 && (
               <button
                 onClick={handleClearAll}
@@ -228,7 +217,7 @@ export function ModuleFilter({
             </div>
           )}
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   )
 }
