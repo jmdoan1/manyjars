@@ -28,6 +28,7 @@ export type JarMinAggregateOutputType = {
   id: string | null
   name: string | null
   description: string | null
+  aiNotes: string | null
   userId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -37,6 +38,7 @@ export type JarMaxAggregateOutputType = {
   id: string | null
   name: string | null
   description: string | null
+  aiNotes: string | null
   userId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -46,6 +48,7 @@ export type JarCountAggregateOutputType = {
   id: number
   name: number
   description: number
+  aiNotes: number
   userId: number
   createdAt: number
   updatedAt: number
@@ -57,6 +60,7 @@ export type JarMinAggregateInputType = {
   id?: true
   name?: true
   description?: true
+  aiNotes?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -66,6 +70,7 @@ export type JarMaxAggregateInputType = {
   id?: true
   name?: true
   description?: true
+  aiNotes?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -75,6 +80,7 @@ export type JarCountAggregateInputType = {
   id?: true
   name?: true
   description?: true
+  aiNotes?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -157,6 +163,7 @@ export type JarGroupByOutputType = {
   id: string
   name: string
   description: string | null
+  aiNotes: string | null
   userId: string
   createdAt: Date
   updatedAt: Date
@@ -187,6 +194,7 @@ export type JarWhereInput = {
   id?: Prisma.StringFilter<"Jar"> | string
   name?: Prisma.StringFilter<"Jar"> | string
   description?: Prisma.StringNullableFilter<"Jar"> | string | null
+  aiNotes?: Prisma.StringNullableFilter<"Jar"> | string | null
   userId?: Prisma.StringFilter<"Jar"> | string
   createdAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
@@ -202,6 +210,7 @@ export type JarOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  aiNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -221,6 +230,7 @@ export type JarWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.JarWhereInput | Prisma.JarWhereInput[]
   name?: Prisma.StringFilter<"Jar"> | string
   description?: Prisma.StringNullableFilter<"Jar"> | string | null
+  aiNotes?: Prisma.StringNullableFilter<"Jar"> | string | null
   userId?: Prisma.StringFilter<"Jar"> | string
   createdAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
@@ -236,6 +246,7 @@ export type JarOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  aiNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -251,6 +262,7 @@ export type JarScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Jar"> | string
   name?: Prisma.StringWithAggregatesFilter<"Jar"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Jar"> | string | null
+  aiNotes?: Prisma.StringNullableWithAggregatesFilter<"Jar"> | string | null
   userId?: Prisma.StringWithAggregatesFilter<"Jar"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Jar"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Jar"> | Date | string
@@ -260,6 +272,7 @@ export type JarCreateInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
@@ -274,6 +287,7 @@ export type JarUncheckedCreateInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -288,6 +302,7 @@ export type JarUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
@@ -302,6 +317,7 @@ export type JarUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -316,6 +332,7 @@ export type JarCreateManyInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -325,6 +342,7 @@ export type JarUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -333,6 +351,7 @@ export type JarUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -357,6 +376,7 @@ export type JarCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  aiNotes?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -366,6 +386,7 @@ export type JarMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  aiNotes?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -375,6 +396,7 @@ export type JarMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  aiNotes?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -549,6 +571,7 @@ export type JarCreateWithoutUserInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoCreateNestedManyWithoutJarsInput
@@ -562,6 +585,7 @@ export type JarUncheckedCreateWithoutUserInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   todos?: Prisma.TodoUncheckedCreateNestedManyWithoutJarsInput
@@ -604,6 +628,7 @@ export type JarScalarWhereInput = {
   id?: Prisma.StringFilter<"Jar"> | string
   name?: Prisma.StringFilter<"Jar"> | string
   description?: Prisma.StringNullableFilter<"Jar"> | string | null
+  aiNotes?: Prisma.StringNullableFilter<"Jar"> | string | null
   userId?: Prisma.StringFilter<"Jar"> | string
   createdAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Jar"> | Date | string
@@ -613,6 +638,7 @@ export type JarCreateWithoutTodosInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
@@ -626,6 +652,7 @@ export type JarUncheckedCreateWithoutTodosInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -660,6 +687,7 @@ export type JarCreateWithoutLinkedJarsInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
@@ -673,6 +701,7 @@ export type JarUncheckedCreateWithoutLinkedJarsInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -691,6 +720,7 @@ export type JarCreateWithoutReferencedByInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
@@ -704,6 +734,7 @@ export type JarUncheckedCreateWithoutReferencedByInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -733,6 +764,7 @@ export type JarUpdateWithoutLinkedJarsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
@@ -746,6 +778,7 @@ export type JarUncheckedUpdateWithoutLinkedJarsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -770,6 +803,7 @@ export type JarUpdateWithoutReferencedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
@@ -783,6 +817,7 @@ export type JarUncheckedUpdateWithoutReferencedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -796,6 +831,7 @@ export type JarCreateWithoutLinkedTagsInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
@@ -809,6 +845,7 @@ export type JarUncheckedCreateWithoutLinkedTagsInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -838,6 +875,7 @@ export type JarUpdateWithoutLinkedTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
@@ -851,6 +889,7 @@ export type JarUncheckedUpdateWithoutLinkedTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -864,6 +903,7 @@ export type JarCreateWithoutNotesInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutJarsInput
@@ -877,6 +917,7 @@ export type JarUncheckedCreateWithoutNotesInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -911,6 +952,7 @@ export type JarCreateManyUserInput = {
   id?: string
   name: string
   description?: string | null
+  aiNotes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -919,6 +961,7 @@ export type JarUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUpdateManyWithoutJarsNestedInput
@@ -932,6 +975,7 @@ export type JarUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   todos?: Prisma.TodoUncheckedUpdateManyWithoutJarsNestedInput
@@ -945,6 +989,7 @@ export type JarUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -953,6 +998,7 @@ export type JarUpdateWithoutTodosInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
@@ -966,6 +1012,7 @@ export type JarUncheckedUpdateWithoutTodosInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -979,6 +1026,7 @@ export type JarUncheckedUpdateManyWithoutTodosInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -988,6 +1036,7 @@ export type JarUpdateWithoutNotesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutJarsNestedInput
@@ -1001,6 +1050,7 @@ export type JarUncheckedUpdateWithoutNotesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1014,6 +1064,7 @@ export type JarUncheckedUpdateManyWithoutNotesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1090,6 +1141,7 @@ export type JarSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   id?: boolean
   name?: boolean
   description?: boolean
+  aiNotes?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1106,6 +1158,7 @@ export type JarSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   id?: boolean
   name?: boolean
   description?: boolean
+  aiNotes?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1116,6 +1169,7 @@ export type JarSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   id?: boolean
   name?: boolean
   description?: boolean
+  aiNotes?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1126,12 +1180,13 @@ export type JarSelectScalar = {
   id?: boolean
   name?: boolean
   description?: boolean
+  aiNotes?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type JarOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["jar"]>
+export type JarOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "description" | "aiNotes" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["jar"]>
 export type JarInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   todos?: boolean | Prisma.Jar$todosArgs<ExtArgs>
@@ -1162,6 +1217,7 @@ export type $JarPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     id: string
     name: string
     description: string | null
+    aiNotes: string | null
     userId: string
     createdAt: Date
     updatedAt: Date
@@ -1597,6 +1653,7 @@ export interface JarFieldRefs {
   readonly id: Prisma.FieldRef<"Jar", 'String'>
   readonly name: Prisma.FieldRef<"Jar", 'String'>
   readonly description: Prisma.FieldRef<"Jar", 'String'>
+  readonly aiNotes: Prisma.FieldRef<"Jar", 'String'>
   readonly userId: Prisma.FieldRef<"Jar", 'String'>
   readonly createdAt: Prisma.FieldRef<"Jar", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Jar", 'DateTime'>

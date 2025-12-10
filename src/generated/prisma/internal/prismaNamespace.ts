@@ -1059,6 +1059,7 @@ export const TodoScalarFieldEnum = {
   id: 'id',
   title: 'title',
   description: 'description',
+  aiNotes: 'aiNotes',
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -1074,6 +1075,7 @@ export const JarScalarFieldEnum = {
   id: 'id',
   name: 'name',
   description: 'description',
+  aiNotes: 'aiNotes',
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1086,6 +1088,7 @@ export const TagScalarFieldEnum = {
   id: 'id',
   name: 'name',
   description: 'description',
+  aiNotes: 'aiNotes',
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1128,6 +1131,7 @@ export const NoteScalarFieldEnum = {
   id: 'id',
   title: 'title',
   content: 'content',
+  aiNotes: 'aiNotes',
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

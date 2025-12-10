@@ -566,6 +566,53 @@ const todosRouter = {
 
 			return { success: true };
 		}),
+
+	// --- AI Access Endpoints ---
+
+	getByIds: protectedProcedure
+		.input(z.object({ ids: z.array(z.string().uuid()).nonempty() }))
+		.query(async ({ ctx, input }) => {
+			return prisma.todo.findMany({
+				where: { id: { in: input.ids }, userId: ctx.user.id },
+				include: { jars: true, tags: true },
+			});
+		}),
+
+	search: protectedProcedure
+		.input(
+			z.object({
+				query: z.string().min(1).max(256),
+				limit: z.number().int().min(1).max(100).default(20),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			return prisma.todo.findMany({
+				where: {
+					userId: ctx.user.id,
+					OR: [
+						{ title: { contains: input.query, mode: "insensitive" } },
+						{ description: { contains: input.query, mode: "insensitive" } },
+						{ aiNotes: { contains: input.query, mode: "insensitive" } },
+					],
+				},
+				take: input.limit,
+				include: { jars: true, tags: true },
+			});
+		}),
+
+	updateAiNotes: protectedProcedure
+		.input(
+			z.object({
+				id: z.string().uuid(),
+				aiNotes: z.string().nullable(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return prisma.todo.update({
+				where: { id: input.id, userId: ctx.user.id },
+				data: { aiNotes: input.aiNotes },
+			});
+		}),
 } satisfies TRPCRouterRecord;
 
 const jarsRouter = {
@@ -713,6 +760,59 @@ const jarsRouter = {
 				where: { id: input.id, userId: ctx.user.id },
 			});
 			return { success: true };
+		}),
+
+	// --- AI Access Endpoints ---
+
+	getByIds: protectedProcedure
+		.input(z.object({ ids: z.array(z.string().uuid()).nonempty() }))
+		.query(async ({ ctx, input }) => {
+			return prisma.jar.findMany({
+				where: { id: { in: input.ids }, userId: ctx.user.id },
+				include: {
+					linkedJars: { include: { targetJar: true } },
+					linkedTags: { include: { tag: true } },
+				},
+			});
+		}),
+
+	search: protectedProcedure
+		.input(
+			z.object({
+				query: z.string().min(1).max(256),
+				limit: z.number().int().min(1).max(100).default(20),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			return prisma.jar.findMany({
+				where: {
+					userId: ctx.user.id,
+					OR: [
+						{ name: { contains: input.query, mode: "insensitive" } },
+						{ description: { contains: input.query, mode: "insensitive" } },
+						{ aiNotes: { contains: input.query, mode: "insensitive" } },
+					],
+				},
+				take: input.limit,
+				include: {
+					linkedJars: { include: { targetJar: true } },
+					linkedTags: { include: { tag: true } },
+				},
+			});
+		}),
+
+	updateAiNotes: protectedProcedure
+		.input(
+			z.object({
+				id: z.string().uuid(),
+				aiNotes: z.string().nullable(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return prisma.jar.update({
+				where: { id: input.id, userId: ctx.user.id },
+				data: { aiNotes: input.aiNotes },
+			});
 		}),
 } satisfies TRPCRouterRecord;
 
@@ -862,6 +962,59 @@ const tagsRouter = {
 			});
 			return { success: true };
 		}),
+
+	// --- AI Access Endpoints ---
+
+	getByIds: protectedProcedure
+		.input(z.object({ ids: z.array(z.string().uuid()).nonempty() }))
+		.query(async ({ ctx, input }) => {
+			return prisma.tag.findMany({
+				where: { id: { in: input.ids }, userId: ctx.user.id },
+				include: {
+					linkedTags: { include: { targetTag: true } },
+					linkedJars: { include: { jar: true } },
+				},
+			});
+		}),
+
+	search: protectedProcedure
+		.input(
+			z.object({
+				query: z.string().min(1).max(256),
+				limit: z.number().int().min(1).max(100).default(20),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			return prisma.tag.findMany({
+				where: {
+					userId: ctx.user.id,
+					OR: [
+						{ name: { contains: input.query, mode: "insensitive" } },
+						{ description: { contains: input.query, mode: "insensitive" } },
+						{ aiNotes: { contains: input.query, mode: "insensitive" } },
+					],
+				},
+				take: input.limit,
+				include: {
+					linkedTags: { include: { targetTag: true } },
+					linkedJars: { include: { jar: true } },
+				},
+			});
+		}),
+
+	updateAiNotes: protectedProcedure
+		.input(
+			z.object({
+				id: z.string().uuid(),
+				aiNotes: z.string().nullable(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return prisma.tag.update({
+				where: { id: input.id, userId: ctx.user.id },
+				data: { aiNotes: input.aiNotes },
+			});
+		}),
 } satisfies TRPCRouterRecord;
 
 const notesRouter = {
@@ -991,6 +1144,53 @@ const notesRouter = {
 				where: { id: input.id, userId: ctx.user.id },
 			});
 			return { success: true };
+		}),
+
+	// --- AI Access Endpoints ---
+
+	getByIds: protectedProcedure
+		.input(z.object({ ids: z.array(z.string().uuid()).nonempty() }))
+		.query(async ({ ctx, input }) => {
+			return prisma.note.findMany({
+				where: { id: { in: input.ids }, userId: ctx.user.id },
+				include: { jars: true, tags: true },
+			});
+		}),
+
+	search: protectedProcedure
+		.input(
+			z.object({
+				query: z.string().min(1).max(256),
+				limit: z.number().int().min(1).max(100).default(20),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			return prisma.note.findMany({
+				where: {
+					userId: ctx.user.id,
+					OR: [
+						{ title: { contains: input.query, mode: "insensitive" } },
+						{ content: { contains: input.query, mode: "insensitive" } },
+						{ aiNotes: { contains: input.query, mode: "insensitive" } },
+					],
+				},
+				take: input.limit,
+				include: { jars: true, tags: true },
+			});
+		}),
+
+	updateAiNotes: protectedProcedure
+		.input(
+			z.object({
+				id: z.string().uuid(),
+				aiNotes: z.string().nullable(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return prisma.note.update({
+				where: { id: input.id, userId: ctx.user.id },
+				data: { aiNotes: input.aiNotes },
+			});
 		}),
 } satisfies TRPCRouterRecord;
 
