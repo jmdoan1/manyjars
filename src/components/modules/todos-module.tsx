@@ -303,6 +303,7 @@ export function TodosModule(props: ModuleProps) {
               tags={tags ?? []}
               enablePriority
               initialContent={descriptionHtml}
+              showToolbar={false}
               onHTMLChange={(html) => setDescriptionHtml(html)}
               onTextChange={(text) => setDescriptionText(text)}
               placeholder="Add details / description..."
