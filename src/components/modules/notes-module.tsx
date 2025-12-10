@@ -255,7 +255,6 @@ export function NotesModule(props: ModuleProps) {
 				</div>
 			)}
 
-			{/* List */}
 			<ul className="grid grid-cols-1 gap-4">
 				{notes?.map((note) => {
 					const formattedDate = new Date(note.createdAt).toLocaleDateString(undefined, {
@@ -268,15 +267,17 @@ export function NotesModule(props: ModuleProps) {
 						key={note.id}
 						className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-white/10 border-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300"
 					>
-						<div className="flex items-start gap-3">
+						<div className="flex items-start gap-4">
+                             {/* Icon */}
+                             <div className="mt-1 w-8 h-8 rounded shrink-0 bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-200">
+                                <FileText className="w-4 h-4" />
+                             </div>
+
 							<div className="flex-1 min-w-0 flex flex-col gap-1">
 								<div className="flex justify-between items-start">
 									<h3 className="font-medium text-sm text-gray-100 leading-relaxed">
 										{note.title || "Untitled Note"}
 									</h3>
-									<span className="text-[10px] text-white/30 ml-2 shrink-0">
-										{formattedDate}
-									</span>
 								</div>
 
 								{/* biome-ignore lint/security: Rich text content */}
@@ -284,46 +285,56 @@ export function NotesModule(props: ModuleProps) {
 									className="text-sm text-white/70 line-clamp-3 prose prose-sm prose-invert max-w-none"
 									dangerouslySetInnerHTML={{ __html: note.content }}
 								/>
-							</div>
-							<div className="flex gap-1 flex-shrink-0">
-								<button
-									type="button"
-									onClick={() => handleEdit(note)}
-									className="p-1.5 text-white/40 hover:text-purple-400 transition-colors"
-								>
-									<Pencil className="w-4 h-4" />
-								</button>
-								<button
-									type="button"
-									onClick={() => handleDelete(note.id)}
-									className="p-1.5 text-white/40 hover:text-red-400 transition-colors"
-								>
-									<Trash2 className="w-4 h-4" />
-								</button>
+                                
+                                {/* Tags/Jars */}
+                                {(note.jars.length > 0 || note.tags.length > 0) && (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                        {note.jars.map((j) => (
+                                            <span
+                                                key={j.id}
+                                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20"
+                                            >
+                                                @{j.name}
+                                            </span>
+                                        ))}
+                                        {note.tags.map((t) => (
+                                            <span
+                                                key={t.id}
+                                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20"
+                                            >
+                                                #{t.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {/* Footer Row: Date & Actions */}
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                                    {/* Left: Date */}
+                                    <div className="text-[10px] text-white/30">
+                                        {formattedDate}
+                                    </div>
+
+                                    {/* Right: Actions */}
+                                    <div className="flex gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleEdit(note)}
+                                            className="p-1.5 text-white/40 hover:text-purple-400 hover:bg-purple-400/10 rounded transition-all"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(note.id)}
+                                            className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
 							</div>
 						</div>
-
-						{/* Tags/Jars */}
-						{(note.jars.length > 0 || note.tags.length > 0) && (
-							<div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/5">
-								{note.jars.map((j) => (
-									<span
-										key={j.id}
-										className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20"
-									>
-										@{j.name}
-									</span>
-								))}
-								{note.tags.map((t) => (
-									<span
-										key={t.id}
-										className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20"
-									>
-										#{t.name}
-									</span>
-								))}
-							</div>
-						)}
 					</li>
 					)
 				})}

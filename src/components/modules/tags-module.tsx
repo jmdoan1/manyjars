@@ -244,7 +244,6 @@ export function TagsModule(props: ModuleProps) {
         </div>
       )}
 
-      {/* Tags List */}
       <ul className="space-y-2">
         {tags?.map((tag) => {
           const formattedDate = new Date(tag.createdAt).toLocaleDateString(undefined, {
@@ -257,8 +256,8 @@ export function TagsModule(props: ModuleProps) {
             key={tag.id}
             className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-white/10 border-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300"
           >
-            <div className="flex items-start gap-3">
-              <div className="mt-1 w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-200">
+            <div className="flex items-start gap-4">
+              <div className="mt-1 w-8 h-8 rounded shrink-0 bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-200">
                 <Hash className="w-4 h-4" />
               </div>
 
@@ -267,9 +266,6 @@ export function TagsModule(props: ModuleProps) {
                    <h3 className="font-medium text-sm text-gray-100 leading-relaxed">
                      {tag.name}
                    </h3>
-                   <span className="text-[10px] text-white/30 ml-2 shrink-0">
-                     {formattedDate}
-                   </span>
                 </div>
                 {tag.description && (
                   <div
@@ -278,7 +274,7 @@ export function TagsModule(props: ModuleProps) {
                   />
                 )}
                 {(tag.linkedJars.length > 0 || tag.linkedTags.length > 0) && (
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="flex flex-wrap gap-1 mt-1">
                     {tag.linkedJars?.map((link: any) => (
                       <span
                         key={link.id}
@@ -297,24 +293,34 @@ export function TagsModule(props: ModuleProps) {
                     ))}
                   </div>
                 )}
-              </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleEdit(tag)}
-                  className="p-2 text-white/40 hover:text-purple-400 transition-colors"
-                  aria-label="Edit tag"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(tag.id)}
-                  className="p-2 text-white/40 hover:text-red-400 transition-colors"
-                  aria-label="Delete tag"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                
+                {/* Footer Row: Date & Actions */}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                    {/* Left: Date */}
+                    <div className="text-[10px] text-white/30">
+                        {formattedDate}
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex gap-1">
+                        <button
+                        type="button"
+                        onClick={() => handleEdit(tag)}
+                        className="p-1.5 text-white/40 hover:text-purple-400 hover:bg-purple-400/10 rounded transition-all"
+                        aria-label="Edit tag"
+                        >
+                        <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                        type="button"
+                        onClick={() => handleDelete(tag.id)}
+                        className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                        aria-label="Delete tag"
+                        >
+                        <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
               </div>
             </div>
           </li>

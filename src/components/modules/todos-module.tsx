@@ -10,13 +10,13 @@ import {
 } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
-import { CheckSquare, PlusCircle, Calendar as CalendarIcon, Trash2 } from 'lucide-react'
+import { CheckSquare, PlusCircle, Calendar as CalendarIcon, Trash2, Pencil } from 'lucide-react'
 import { MentionEditor } from "../mentions/mention-editor"
 import { MentionInput } from "../mentions/mention-input"
 import { ModuleFilter } from "./module-filter"
 import { ModuleSort } from "./module-sort"
 import type { ModuleProps } from '@/types/dashboard-types'
-import { PRIORITY_LABEL, type PriorityCode } from '@/hooks/use-mentions'
+import { PRIORITY_LABEL } from '@/hooks/use-mentions'
 
 // Local type for parsed todo
 type ParsedTodoMeta = {
@@ -163,6 +163,7 @@ export function TodosModule(props: ModuleProps) {
   const [descriptionHtml, setDescriptionHtml] = useState('')
   const [descriptionText, setDescriptionText] = useState('')
   const [editorKey, setEditorKey] = useState(0)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
 
 	// Mention state - REMOVED
@@ -177,11 +178,7 @@ export function TodosModule(props: ModuleProps) {
     ...trpc.todos.add.mutationOptions(),
     onSuccess: () => {
       refetch()
-      setTitle('')
-      setDescriptionHtml('')
-      setDescriptionText('')
-      setDueDate('')
-      setEditorKey((k) => k + 1)
+      resetForm()
       
       // Re-focus on title input for smooth consecutive todo entry
       requestAnimationFrame(() => {
@@ -194,6 +191,7 @@ export function TodosModule(props: ModuleProps) {
     ...trpc.todos.update.mutationOptions(),
     onSuccess: () => {
       refetch()
+      if (editingId) resetForm()
     },
   })
 
@@ -203,6 +201,15 @@ export function TodosModule(props: ModuleProps) {
       refetch()
     },
   })
+
+  const resetForm = useCallback(() => {
+    setTitle('')
+    setDescriptionHtml('')
+    setDescriptionText('')
+    setDueDate('')
+    setEditorKey((k) => k + 1)
+    setEditingId(null)
+  }, [])
 
   const submitTodo = () => {
     if (!title.trim()) return
@@ -214,14 +221,30 @@ export function TodosModule(props: ModuleProps) {
     }
     if (!parsed.title) return
 
-    addTodo({
-      title: parsed.title,
-      description: descriptionHtml || undefined,
-      dueDate: dueDate || undefined,
-    })
+    if (editingId) {
+       updateTodo({
+         id: editingId,
+         title: parsed.title,
+         description: descriptionHtml || undefined,
+         dueDate: dueDate || undefined,
+       })
+    } else {
+       addTodo({
+         title: parsed.title,
+         description: descriptionHtml || undefined,
+         dueDate: dueDate || undefined,
+       })
+    }
   }
 
-
+  const handleEdit = useCallback((todo: NonNullable<typeof todos>[number]) => {
+    setEditingId(todo.id)
+    setTitle(todo.title)
+    setDescriptionHtml(todo.description || '')
+    setDueDate(todo.dueDate ? new Date(todo.dueDate).toISOString().split('T')[0] : '')
+    setEditorKey((k) => k + 1)
+    setShowAddForm(true)
+  }, [])
 
   return (
     <div className="flex flex-col gap-4">
@@ -229,13 +252,16 @@ export function TodosModule(props: ModuleProps) {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => {
+            setShowAddForm(!showAddForm)
+            if (showAddForm) resetForm()
+          }}
           className="flex items-center gap-2 text-white/70 hover:text-purple-400 transition-colors text-sm self-start group"
         >
-          <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
-          <span className="font-medium">
-            {showAddForm ? 'Hide' : 'Add New Todo'}
-          </span>
+           <PlusCircle className={`w-5 h-5 transition-transform duration-300 ${showAddForm ? 'rotate-45' : ''}`} />
+           <span className="font-medium">
+             {showAddForm ? 'Hide' : editingId ? 'Edit Todo' : 'Add New Todo'}
+           </span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -265,7 +291,7 @@ export function TodosModule(props: ModuleProps) {
         </div>
       </div>
 
-      {/* Add Todo Form */}
+      {/* Add/Edit Todo Form */}
       {showAddForm && (
         <div className="flex flex-col gap-2 relative animate-in slide-in-from-top-2 fade-in duration-300">
           <div className="flex gap-2">
@@ -310,13 +336,21 @@ export function TodosModule(props: ModuleProps) {
               className="min-h-[80px] bg-white/5 border border-white/10 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-400/50 transition-all"
             />
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {editingId && (
+               <button
+                 onClick={resetForm}
+                 className="px-4 py-2 border border-white/10 hover:bg-white/5 text-white/70 rounded-lg text-sm font-medium transition-colors"
+               >
+                 Cancel
+               </button>
+            )}
             <button
               onClick={submitTodo}
               disabled={!title.trim()}
               className="px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
             >
-              Add Todo
+              {editingId ? 'Update Todo' : 'Add Todo'}
             </button>
           </div>
         </div>
@@ -324,7 +358,7 @@ export function TodosModule(props: ModuleProps) {
 
       {/* Todo List */}
       <div className="flex flex-col gap-2">
-        {todos?.map((todo) => {
+        {todos?.filter(t => !t.completedAt).map((todo) => {
           const formattedDate = new Date(todo.createdAt).toLocaleDateString(undefined, {
             month: 'short',
             day: 'numeric',
@@ -341,34 +375,16 @@ export function TodosModule(props: ModuleProps) {
           return (
             <div
               key={todo.id}
-              className={`group relative flex flex-col gap-2 p-3 rounded-lg border transition-all duration-300 ${
-                todo.completedAt
-                  ? 'bg-white/5 border-white/5 opacity-60 hover:opacity-100'
-                  : 'bg-white/10 border-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5'
-              }`}
+              className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-white/10 border-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300"
             >
-              <div className="flex items-start gap-3">
-                <button
-                  onClick={() =>
-                    updateTodo({
-                      id: todo.id,
-                      completedAt: todo.completedAt ? null : new Date(),
-                    })
-                  }
-                  className={`mt-1 w-5 h-5 rounded border flex items-center justify-center transition-all duration-300 ${
-                    todo.completedAt
-                      ? 'bg-green-500/20 border-green-500 text-green-400'
-                      : 'border-white/30 hover:border-purple-400 hover:bg-purple-400/10'
-                  }`}
-                >
-                  {todo.completedAt && <CheckSquare className="w-3.5 h-3.5" />}
-                </button>
+              <div className="flex items-start gap-4">
+                 {/* No Left Icon requested */}
 
                 <div className="flex-1 min-w-0 flex flex-col gap-1">
                   <div className="flex justify-between items-start">
                      {/* Title & Priority */}
                      <div className="flex items-center gap-2 flex-wrap">
-                       <span className={`font-medium text-sm leading-relaxed ${todo.completedAt ? 'line-through text-white/50' : 'text-gray-100'}`}>
+                       <span className="font-medium text-sm leading-relaxed text-gray-100">
                          {todo.title}
                        </span>
                        {todo.priority && todo.priority !== 'MEDIUM' && (
@@ -380,9 +396,21 @@ export function TodosModule(props: ModuleProps) {
                          </span>
                        )}
                      </div>
+                  </div>
 
-                     {/* Dates */}
-                     <div className="flex items-center gap-2 text-[10px] shrink-0">
+                  {/* Description */}
+                  {todo.description && (
+                    <TodoDescription 
+                      html={todo.description} 
+                      onUpdate={(newHtml) => updateTodo({ id: todo.id, description: newHtml })}
+                      className="text-sm text-white/70 prose prose-sm prose-invert max-w-none"
+                    />
+                  )}
+
+                  {/* Footer Row: Date & Actions */}
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                      {/* Left: Date */}
+                      <div className="flex items-center gap-2 text-[10px]">
                        {formattedDueDate && (
                          <span className={`px-1.5 py-0.5 rounded border ${
                            isOverdue ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/10 text-white/50'
@@ -394,27 +422,36 @@ export function TodosModule(props: ModuleProps) {
                          {formattedDate}
                        </span>
                      </div>
-                  </div>
 
-                  {/* Description */}
-                  {todo.description && (
-                    <TodoDescription 
-                      html={todo.description} 
-                      onUpdate={(newHtml) => updateTodo({ id: todo.id, description: newHtml })}
-                      className="text-sm text-white/70 prose prose-sm prose-invert max-w-none"
-                    />
-                  )}
+                      {/* Right: Actions */}
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => updateTodo({ id: todo.id, completedAt: new Date() })}
+                          className="p-1.5 text-white/40 hover:text-green-400 hover:bg-green-400/10 rounded transition-all"
+                          title="Mark as done"
+                        >
+                          <CheckSquare className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(todo)}
+                          className="p-1.5 text-white/40 hover:text-purple-400 hover:bg-purple-400/10 rounded transition-all"
+                          title="Edit todo"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                             if (confirm('Delete this todo?')) deleteTodo({ id: todo.id })
+                          }}
+                          className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                          title="Delete todo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                  </div>
                 </div>
               </div>
-              
-              <button
-                onClick={() => {
-                   if (confirm('Delete this todo?')) deleteTodo({ id: todo.id })
-                }}
-                className="absolute top-2 right-2 p-1.5 text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded opacity-0 group-hover:opacity-100 transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </div>
           )
         })}
@@ -428,6 +465,7 @@ export function TodosModule(props: ModuleProps) {
             onClick={() => setShowCompleted(!showCompleted)}
             className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm"
           >
+             {/* Simple Caret or similar */}
             <svg
               className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-90' : ''}`}
               fill="none"
@@ -445,95 +483,71 @@ export function TodosModule(props: ModuleProps) {
           </button>
 
           {showCompleted && (
-            <ul className="mt-2 space-y-2">
+            <div className="flex flex-col gap-2 mt-2">
               {todos
                 .filter((t) => t.completedAt)
-                .map((t) => (
-                  <li
-                    key={t.id}
-                    className="bg-white/[0.02] border border-white/5 rounded-lg p-3 backdrop-blur-sm shadow-md flex flex-col gap-2 opacity-60"
+                .map((todo) => {
+                  const formattedDate = new Date(todo.createdAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                  
+                  return (
+                  <div
+                    key={todo.id}
+                    className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-white/5 border-white/5 opacity-70 hover:opacity-100 transition-all duration-300"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={!!t.completedAt}
-                          onChange={(e) =>
-                            updateTodo({
-                              id: t.id,
-                              completedAt: e.target.checked ? new Date() : null,
-                            })
-                          }
-                          className="h-4 w-4 rounded accent-purple-500"
-                        />
-                        <span className="text-base text-white line-through opacity-70">
-                          {t.title}
-                        </span>
-                      </div>
+                     <div className="flex items-start gap-4">
+                        {/* No Left Icon */}
+                        
+                        <div className="flex-1 min-w-0 flex flex-col gap-1">
+                           <div className="flex justify-between items-start">
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <span className="font-medium text-sm leading-relaxed text-white/50 line-through">
+                                 {todo.title}
+                               </span>
+                             </div>
+                           </div>
 
-                      <button
-                        type="button"
-                        onClick={() => deleteTodo({ id: t.id })}
-                        className="text-xs px-2 py-1 rounded bg-red-500/80 hover:bg-red-600 disabled:bg-red-500/40"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                           {todo.description && (
+                             <div 
+                               className="text-sm text-white/40 prose prose-sm prose-invert max-w-none line-through"
+                               dangerouslySetInnerHTML={{ __html: todo.description }}
+                             />
+                           )}
+                           
+                           {/* Footer Row: Date & Actions */}
+                           <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                              {/* Left: Date */}
+                              <div className="flex items-center gap-2 text-[10px] text-white/30">
+                                <span>{formattedDate}</span>
+                              </div>
 
-                    {t.description && (
-                      <TodoDescription
-                        html={t.description}
-                        onUpdate={(newHtml) =>
-                          updateTodo({ id: t.id, description: newHtml })
-                        }
-                        className="text-sm text-white/50 ml-6 line-through prose prose-sm prose-invert max-w-none opacity-50 prose-p:my-1 prose-headings:my-2 **:data-[type=taskItem]:flex **:data-[type=taskItem]:gap-2 **:data-[type=taskItem]:items-start **:data-[type=taskItem]:*:data-[type=taskItemLabel]:flex-1 [&_input[type=checkbox]]:mt-1 [&_input[type=checkbox]]:cursor-pointer"
-                      />
-                    )}
-
-                    <div className="flex flex-wrap gap-2 text-xs text-white/80">
-                      {t.jars?.map((j) => (
-                        <span
-                          key={j.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-purple-500/30 px-2 py-0.5 border border-purple-300/30 text-purple-100"
-                        >
-                          <span className="text-[10px]">@</span>
-                          <span>{j.name}</span>
-                        </span>
-                      ))}
-
-                      {t.tags?.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-teal-500/30 px-2 py-0.5 border border-teal-300/30 text-teal-100"
-                        >
-                          <span className="text-[10px]">#</span>
-                          <span>{tag.name}</span>
-                        </span>
-                      ))}
-
-                      {t.priority && (
-                        <span
-                          className={
-                            t.priority === 'VERY_HIGH'
-                              ? 'inline-flex items-center gap-1 rounded-full bg-fuchsia-500/30 border border-fuchsia-300/30 px-2 py-0.5 text-fuchsia-100'
-                              : t.priority === 'HIGH'
-                              ? 'inline-flex items-center gap-1 rounded-full bg-rose-500/30 border border-rose-300/30 px-2 py-0.5 text-rose-100'
-                              : t.priority === 'MEDIUM'
-                              ? 'inline-flex items-center gap-1 rounded-full bg-amber-500/30 border border-amber-300/30 px-2 py-0.5 text-amber-100'
-                              : t.priority === 'LOW'
-                              ? 'inline-flex items-center gap-1 rounded-full bg-sky-500/30 border border-sky-300/30 px-2 py-0.5 text-sky-100'
-                              : 'inline-flex items-center gap-1 rounded-full bg-slate-500/30 border border-slate-300/30 px-2 py-0.5 text-slate-100'
-                          }
-                        >
-                          <span>
-                            !{PRIORITY_LABEL[t.priority as PriorityCode]}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-            </ul>
+                              {/* Right: Actions */}
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => updateTodo({ id: todo.id, completedAt: null })}
+                                  className="p-1.5 text-green-400/50 hover:text-green-400 hover:bg-green-400/10 rounded transition-all"
+                                  title="Mark as not done"
+                                >
+                                  <CheckSquare className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                     if (confirm('Delete this todo?')) deleteTodo({ id: todo.id })
+                                  }}
+                                  className="p-1.5 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-all"
+                                  title="Delete todo"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                )})}
+            </div>
           )}
         </div>
       )}
