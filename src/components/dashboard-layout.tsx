@@ -20,7 +20,7 @@ export interface DashboardLayoutProps {
   moduleDefinitions: ModuleDefinition[]
 }
 
-const MIN_COLUMN_WIDTH = 400
+const MIN_COLUMN_WIDTH = 500
 
 export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
   const {
@@ -46,8 +46,9 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
+        const GAP = 24
         const width = entry.contentRect.width
-        const count = Math.max(1, Math.floor(width / MIN_COLUMN_WIDTH))
+        const count = Math.max(1, Math.floor((width + GAP) / (MIN_COLUMN_WIDTH + GAP)))
         setColumnCount(count)
       }
     })
@@ -181,7 +182,7 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-[1600px] mx-auto">
+      <div className="w-full">
         {/* Dashboard Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-teal-400 bg-clip-text text-transparent mb-2">
