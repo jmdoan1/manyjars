@@ -17,6 +17,7 @@ const todoUpsertMetaInput = z.object({
 	jars: z.array(z.string().min(1)).optional(),
 	tags: z.array(z.string().min(1)).optional(),
 	priority: priorityEnum.optional(),
+	dueDate: z.string().optional(), // Passed as ISO string or YYYY-MM-DD
 });
 
 const todosRouter = {
@@ -26,6 +27,7 @@ const todosRouter = {
 				jarIds: z.array(z.string()).optional(),
 				tagIds: z.array(z.string()).optional(),
 				priorities: z.array(priorityEnum).optional(),
+				orderBy: z.enum(['created_desc', 'created_asc', 'due_asc', 'due_desc', 'priority_desc']).optional(),
 			}).optional()
 		)
 		.query(async ({ ctx, input }) => {
@@ -42,9 +44,29 @@ const todosRouter = {
 				where.priority = { in: priorities };
 			}
 
+			const orderBy: any = {}
+			switch (input?.orderBy) {
+				case 'created_asc':
+					orderBy.createdAt = 'asc'
+					break
+				case 'due_asc':
+					orderBy.dueDate = { sort: 'asc', nulls: 'last' }
+					break
+				case 'due_desc':
+					orderBy.dueDate = { sort: 'desc', nulls: 'last' }
+					break
+				case 'priority_desc':
+					orderBy.priority = 'desc'
+					break
+				case 'created_desc':
+				default:
+					orderBy.createdAt = 'desc'
+					break
+			}
+
 			const todos = await prisma.todo.findMany({
 				where,
-				orderBy: { createdAt: "desc" },
+				orderBy: orderBy,
 				include: todoBaseInclude,
 			});
 			return todos;
@@ -62,7 +84,7 @@ const todosRouter = {
 		.mutation(async ({ input, ctx }) => {
 			console.log("todos.add called with", input, "by user", ctx.user.id);
 
-			const { title, description } = input;
+			const { title, description, dueDate } = input;
 			
 			// Extract jars, tags, priority from text
 			const { jars, tags, priority } = await extractAndEnsureMentions(
@@ -76,7 +98,8 @@ const todosRouter = {
 						title,
 						description,
 						userId: ctx.user.id,
-						priority: priority ?? input.priority, // Prefer parsed priority, fallback to input? Or just parsed? parsed returns undefined if not found.
+						priority: priority ?? input.priority,
+						dueDate: dueDate ? new Date(dueDate) : undefined,
 						// connect jars
 						jars: {
 							connect: jars.map((j) => ({ id: j.id })),
@@ -105,11 +128,12 @@ const todosRouter = {
 					title: z.string().min(1).optional(),
 					description: z.string().nullable().optional(),
 					completedAt: z.date().nullable().optional(),
+					dueDate: z.string().nullable().optional(), // Override to allow null
 				})
 				.merge(todoUpsertMetaInput),
 		)
 		.mutation(async ({ input, ctx }) => {
-			const { id, title, description, jars, tags, priority, ...rest } = input;
+			const { id, title, description, jars, tags, priority, dueDate, ...rest } = input;
 			const userId = ctx.user.id;
 
 			// Check if we need to re-parse mentions (if title or description changed)
@@ -195,6 +219,7 @@ const jarsRouter = {
 		.input(
 			z.object({
 				tagIds: z.array(z.string()).optional(),
+				orderBy: z.enum(['created_desc', 'created_asc', 'name_asc', 'name_desc']).optional(),
 			}).optional()
 		)
 		.query(async ({ ctx, input }) => {
@@ -205,9 +230,26 @@ const jarsRouter = {
 				where.linkedTags = { some: { tagId: { in: tagIds } } };
 			}
 
+			const orderBy: any = {}
+			switch (input?.orderBy) {
+				case 'created_asc':
+					orderBy.createdAt = 'asc'
+					break
+				case 'created_desc':
+					orderBy.createdAt = 'desc'
+					break
+				case 'name_desc':
+					orderBy.name = 'desc'
+					break
+				case 'name_asc':
+				default:
+					orderBy.name = 'asc'
+					break
+			}
+
 			return prisma.jar.findMany({
 				where,
-				orderBy: { name: "asc" },
+				orderBy: orderBy,
 				include: {
 					linkedJars: { include: { targetJar: true } },
 					linkedTags: { include: { tag: true } },
@@ -345,6 +387,7 @@ const tagsRouter = {
 		.input(
 			z.object({
 				jarIds: z.array(z.string()).optional(),
+				orderBy: z.enum(['created_desc', 'created_asc', 'name_asc', 'name_desc']).optional(),
 			}).optional()
 		)
 		.query(async ({ ctx, input }) => {
@@ -355,9 +398,26 @@ const tagsRouter = {
 				where.linkedJars = { some: { jarId: { in: jarIds } } };
 			}
 
+			const orderBy: any = {}
+			switch (input?.orderBy) {
+				case 'created_asc':
+					orderBy.createdAt = 'asc'
+					break
+				case 'created_desc':
+					orderBy.createdAt = 'desc'
+					break
+				case 'name_desc':
+					orderBy.name = 'desc'
+					break
+				case 'name_asc':
+				default:
+					orderBy.name = 'asc'
+					break
+			}
+
 			return prisma.tag.findMany({
 				where,
-				orderBy: { name: "asc" },
+				orderBy: orderBy,
 				include: {
 					linkedTags: { include: { targetTag: true } },
 					linkedJars: { include: { jar: true } },
@@ -496,6 +556,7 @@ const notesRouter = {
 			z.object({
 				jarIds: z.array(z.string()).optional(),
 				tagIds: z.array(z.string()).optional(),
+				orderBy: z.enum(['created_desc', 'created_asc', 'title_asc', 'title_desc']).optional(),
 			}).optional()
 		)
 		.query(async ({ ctx, input }) => {
@@ -505,13 +566,31 @@ const notesRouter = {
 			if (jarIds && jarIds.length > 0) {
 				where.jars = { some: { id: { in: jarIds } } };
 			}
+
 			if (tagIds && tagIds.length > 0) {
 				where.tags = { some: { id: { in: tagIds } } };
 			}
 
-			return prisma.note.findMany({
+			const orderBy: any = {}
+			switch (input?.orderBy) {
+				case 'created_asc':
+					orderBy.createdAt = 'asc'
+					break
+				case 'title_asc':
+					orderBy.title = 'asc'
+					break
+				case 'title_desc':
+					orderBy.title = 'desc'
+					break
+				case 'created_desc':
+				default:
+					orderBy.createdAt = 'desc'
+					break
+			}
+
+			return await prisma.note.findMany({
 				where,
-				orderBy: { updatedAt: "desc" },
+				orderBy: orderBy,
 				include: {
 					jars: true,
 					tags: true,

@@ -7,6 +7,7 @@ import { MentionEditor } from "../mentions/mention-editor";
 import { parseMentions } from "@/hooks/use-mentions";
 import { useTRPC } from "@/integrations/trpc/react";
 import { ModuleFilter } from "./module-filter";
+import { ModuleSort } from "./module-sort";
 import type { ModuleProps } from "@/types/dashboard-types";
 
 export function NotesModule(props: ModuleProps) {
@@ -18,21 +19,31 @@ export function NotesModule(props: ModuleProps) {
 	const [filterTags, setFilterTags] = useState<string[]>(
 		(props.config?.filters as any)?.tagIds ?? []
 	);
+	const [filterSort, setFilterSort] = useState<string>(
+		(props.config?.filters as any)?.orderBy ?? 'created_desc'
+	);
 
 	// Persist filters
 	useEffect(() => {
-		props.onConfigChange?.({
-			filters: {
-				jarIds: filterJars,
-				tagIds: filterTags,
-			}
-		});
-	}, [filterJars, filterTags, props.onConfigChange]);
+		const newFilters = {
+			jarIds: filterJars,
+			tagIds: filterTags,
+			orderBy: filterSort,
+		}
+		const currentFilters = (props.config?.filters as any)
+
+		if (JSON.stringify(newFilters) !== JSON.stringify(currentFilters)) {
+			props.onConfigChange?.({
+				filters: newFilters
+			});
+		}
+	}, [filterJars, filterTags, filterSort, props.onConfigChange]);
 
 	const { data: notes, refetch } = useQuery(
 		trpc.notes.list.queryOptions({
 			jarIds: filterJars,
 			tagIds: filterTags,
+			orderBy: filterSort as any,
 		}),
 	);
 	const { data: jars } = useQuery(trpc.jars.list.queryOptions());
@@ -150,17 +161,29 @@ export function NotesModule(props: ModuleProps) {
 					</span>
 				</button>
 
-				<ModuleFilter
-					jars={jars ?? []}
-					tags={tags ?? []}
-					selectedJarIds={filterJars}
-					selectedTagIds={filterTags}
-					onFilterChange={({ jarIds, tagIds }) => {
-						setFilterJars(jarIds);
-						setFilterTags(tagIds);
-					}}
-					showPriority={false}
-				/>
+				<div className="flex items-center gap-2">
+					<ModuleSort
+						options={[
+							{ label: 'Newest First', value: 'created_desc' },
+							{ label: 'Oldest First', value: 'created_asc' },
+							{ label: 'Title (A-Z)', value: 'title_asc' },
+							{ label: 'Title (Z-A)', value: 'title_desc' },
+						]}
+						value={filterSort}
+						onSortChange={setFilterSort}
+					/>
+					<ModuleFilter
+						jars={jars ?? []}
+						tags={tags ?? []}
+						selectedJarIds={filterJars}
+						selectedTagIds={filterTags}
+						onFilterChange={({ jarIds, tagIds }) => {
+							setFilterJars(jarIds);
+							setFilterTags(tagIds);
+						}}
+						showPriority={false}
+					/>
+				</div>
 			</div>
 
 			{/* Form */}
@@ -220,18 +243,28 @@ export function NotesModule(props: ModuleProps) {
 
 			{/* List */}
 			<ul className="grid grid-cols-1 gap-4">
-				{notes?.map((note) => (
+				{notes?.map((note) => {
+					const formattedDate = new Date(note.createdAt).toLocaleDateString(undefined, {
+						month: 'short',
+						day: 'numeric',
+					})
+
+					return (
 					<li
 						key={note.id}
-						className="bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm shadow-md hover:border-purple-400/30 transition-all flex flex-col gap-2 relative group-item"
+						className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-white/10 border-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300"
 					>
-						<div className="flex justify-between items-start gap-2">
-							<div className="flex-1 min-w-0">
-								{note.title && (
-									<h3 className="text-white font-semibold truncate mb-1">
-										{note.title}
+						<div className="flex items-start gap-3">
+							<div className="flex-1 min-w-0 flex flex-col gap-1">
+								<div className="flex justify-between items-start">
+									<h3 className="font-medium text-sm text-gray-100 leading-relaxed">
+										{note.title || "Untitled Note"}
 									</h3>
-								)}
+									<span className="text-[10px] text-white/30 ml-2 shrink-0">
+										{formattedDate}
+									</span>
+								</div>
+
 								{/* biome-ignore lint/security: Rich text content */}
 								<div
 									className="text-sm text-white/70 line-clamp-3 prose prose-sm prose-invert max-w-none"
@@ -278,7 +311,8 @@ export function NotesModule(props: ModuleProps) {
 							</div>
 						)}
 					</li>
-				))}
+					)
+				})}
 			</ul>
 
 			{notes?.length === 0 && !showAddForm && (

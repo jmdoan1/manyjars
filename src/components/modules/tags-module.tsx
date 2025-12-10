@@ -10,25 +10,37 @@ import {
 } from '@/hooks/use-mentions'
 import type { ModuleProps } from '@/types/dashboard-types'
 
+import { ModuleSort } from "./module-sort"
+
 export function TagsModule(props: ModuleProps) {
   const trpc = useTRPC()
 
   const [filterJars, setFilterJars] = useState<string[]>(
     (props.config?.filters as any)?.jarIds ?? []
   )
+  const [filterSort, setFilterSort] = useState<string>(
+    (props.config?.filters as any)?.orderBy ?? 'name_asc'
+  )
 
   // Persist filters
   useEffect(() => {
-    props.onConfigChange?.({
-      filters: {
-        jarIds: filterJars,
-      }
-    })
-  }, [filterJars, props.onConfigChange])
+    const newFilters = {
+      jarIds: filterJars,
+      orderBy: filterSort,
+    }
+    const currentFilters = (props.config?.filters as any)
+
+    if (JSON.stringify(newFilters) !== JSON.stringify(currentFilters)) {
+      props.onConfigChange?.({
+        filters: newFilters
+      })
+    }
+  }, [filterJars, filterSort, props.onConfigChange])
 
   const { data: tags, refetch } = useQuery(
     trpc.tags.list.queryOptions({
-      jarIds: filterJars
+      jarIds: filterJars,
+      orderBy: filterSort as any,
     })
   )
   const { data: jars } = useQuery(trpc.jars.list.queryOptions())
@@ -138,15 +150,27 @@ export function TagsModule(props: ModuleProps) {
           </span>
         </button>
 
-        <ModuleFilter
-          jars={jars ?? []}
-          selectedJarIds={filterJars}
-          onFilterChange={({ jarIds }) => {
-            setFilterJars(jarIds)
-          }}
-          showPriority={false}
-          hideTags={true}
-        />
+        <div className="flex items-center gap-2">
+          <ModuleSort
+            options={[
+              { label: 'Name (A-Z)', value: 'name_asc' },
+              { label: 'Name (Z-A)', value: 'name_desc' },
+              { label: 'Newest First', value: 'created_desc' },
+              { label: 'Oldest First', value: 'created_asc' },
+            ]}
+            value={filterSort}
+            onSortChange={setFilterSort}
+          />
+          <ModuleFilter
+            jars={jars ?? []}
+            selectedJarIds={filterJars}
+            onFilterChange={({ jarIds }) => {
+              setFilterJars(jarIds)
+            }}
+            showPriority={false}
+            hideTags={true}
+          />
+        </div>
       </div>
 
       {/* Add/Edit Tag Form */}
@@ -207,16 +231,30 @@ export function TagsModule(props: ModuleProps) {
 
       {/* Tags List */}
       <ul className="space-y-2">
-        {tags?.map((tag) => (
+        {tags?.map((tag) => {
+          const formattedDate = new Date(tag.createdAt).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+          })
+          
+          return (
           <li
             key={tag.id}
-            className="bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm shadow-md hover:border-purple-400/30 transition-all"
+            className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-white/10 border-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Hash className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                  <h3 className="text-white font-semibold truncate">{tag.name}</h3>
+            <div className="flex items-start gap-3">
+              <div className="mt-1 w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-200">
+                <Hash className="w-4 h-4" />
+              </div>
+
+              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                 <div className="flex justify-between items-start">
+                   <h3 className="font-medium text-sm text-gray-100 leading-relaxed">
+                     {tag.name}
+                   </h3>
+                   <span className="text-[10px] text-white/30 ml-2 shrink-0">
+                     {formattedDate}
+                   </span>
                 </div>
                 {tag.description && (
                   <div
@@ -265,7 +303,8 @@ export function TagsModule(props: ModuleProps) {
               </div>
             </div>
           </li>
-        ))}
+          )
+        })}
       </ul>
 
       {tags?.length === 0 && (

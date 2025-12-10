@@ -40,6 +40,7 @@ model Todo {
   updatedAt   DateTime @updatedAt
 
   completedAt DateTime?
+  dueDate     DateTime?
   priority    Priority  @default(MEDIUM)
 
   jars Jar[] @relation("TodoJars")

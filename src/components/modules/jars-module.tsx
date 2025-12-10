@@ -7,25 +7,37 @@ import { MentionEditor } from "../mentions/mention-editor"
 import { ModuleFilter } from "./module-filter"
 import type { ModuleProps } from '@/types/dashboard-types'
 
+import { ModuleSort } from "./module-sort"
+
 export function JarsModule(props: ModuleProps) {
   const trpc = useTRPC()
 
   const [filterTags, setFilterTags] = useState<string[]>(
     (props.config?.filters as any)?.tagIds ?? []
   )
+  const [filterSort, setFilterSort] = useState<string>(
+    (props.config?.filters as any)?.orderBy ?? 'name_asc'
+  )
 
   // Persist filters
   useEffect(() => {
-    props.onConfigChange?.({
-      filters: {
-        tagIds: filterTags,
-      }
-    })
-  }, [filterTags, props.onConfigChange])
+    const newFilters = {
+      tagIds: filterTags,
+      orderBy: filterSort,
+    }
+    const currentFilters = (props.config?.filters as any)
+
+    if (JSON.stringify(newFilters) !== JSON.stringify(currentFilters)) {
+      props.onConfigChange?.({
+        filters: newFilters
+      })
+    }
+  }, [filterTags, filterSort, props.onConfigChange])
 
   const { data: jars, refetch } = useQuery(
     trpc.jars.list.queryOptions({
-      tagIds: filterTags
+      tagIds: filterTags,
+      orderBy: filterSort as any,
     })
   )
   const { data: tags } = useQuery(trpc.tags.list.queryOptions())
@@ -128,15 +140,27 @@ export function JarsModule(props: ModuleProps) {
           </span>
         </button>
 
-        <ModuleFilter
-          tags={tags ?? []}
-          selectedTagIds={filterTags}
-          onFilterChange={({ tagIds }) => {
-            setFilterTags(tagIds)
-          }}
-          showPriority={false}
-          hideJars={true}
-        />
+        <div className="flex items-center gap-2">
+          <ModuleSort
+            options={[
+              { label: 'Name (A-Z)', value: 'name_asc' },
+              { label: 'Name (Z-A)', value: 'name_desc' },
+              { label: 'Newest First', value: 'created_desc' },
+              { label: 'Oldest First', value: 'created_asc' },
+            ]}
+            value={filterSort}
+            onSortChange={setFilterSort}
+          />
+          <ModuleFilter
+            tags={tags ?? []}
+            selectedTagIds={filterTags}
+            onFilterChange={({ tagIds }) => {
+              setFilterTags(tagIds)
+            }}
+            showPriority={false}
+            hideJars={true}
+          />
+        </div>
       </div>
 
       {/* Add/Edit Jar Form */}
@@ -197,16 +221,30 @@ export function JarsModule(props: ModuleProps) {
 
       {/* Jars List */}
       <ul className="space-y-2">
-        {jars?.map((jar) => (
+        {jars?.map((jar) => {
+          const formattedDate = new Date(jar.createdAt).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+          })
+
+          return (
           <li
             key={jar.id}
-            className="bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm shadow-md hover:border-purple-400/30 transition-all"
+            className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-white/10 border-white/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Archive className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                  <h3 className="text-white font-semibold truncate">{jar.name}</h3>
+            <div className="flex items-start gap-3">
+              <div className="mt-1 w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-200">
+                <Archive className="w-4 h-4" />
+              </div>
+
+              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                <div className="flex justify-between items-start">
+                   <h3 className="font-medium text-sm text-gray-100 leading-relaxed">
+                     {jar.name}
+                   </h3>
+                   <span className="text-[10px] text-white/30 ml-2 shrink-0">
+                     {formattedDate}
+                   </span>
                 </div>
                 {jar.description && (
                   <div
@@ -255,7 +293,8 @@ export function JarsModule(props: ModuleProps) {
               </div>
             </div>
           </li>
-        ))}
+          )
+        })}
       </ul>
 
       {jars?.length === 0 && (
