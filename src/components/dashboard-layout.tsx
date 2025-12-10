@@ -29,6 +29,7 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
     layout,
     moveModule,
     addModule,
+    removeModule,
   } = useDashboard({ moduleDefinitions })
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -228,6 +229,7 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
                     onDragEnd={handleDragEnd}
                     onDragOver={handleDragOver}
                     onDrop={() => handleDropOnModule(moduleId, colIndex)}
+                    onRemove={() => removeModule(moduleId)}
                     onMoveUp={() => handleMoveUp(moduleId, colIndex, index)}
                     onMoveDown={() => handleMoveDown(moduleId, colIndex, index)}
                     isDragging={draggedModuleId === moduleId}

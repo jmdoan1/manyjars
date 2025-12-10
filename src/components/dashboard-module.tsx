@@ -3,7 +3,7 @@
 
 
 import { type DragEvent, type ReactNode, useState } from 'react'
-import { GripVertical, ChevronUp, ChevronDown } from 'lucide-react'
+import { GripVertical, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 
 
 export interface DashboardModuleWrapperProps {
@@ -14,6 +14,7 @@ export interface DashboardModuleWrapperProps {
   onDragEnd?: () => void
   onDragOver?: (moduleId: string) => void
   onDrop?: (targetModuleId: string) => void
+  onRemove?: () => void
   onMoveUp?: () => void
   onMoveDown?: () => void
   isDragging?: boolean
@@ -29,6 +30,7 @@ export function DashboardModuleWrapper({
   onDragEnd,
   onDragOver,
   onDrop,
+  onRemove,
   onMoveUp,
   onMoveDown,
   isDragging = false,
@@ -102,6 +104,17 @@ export function DashboardModuleWrapper({
 
         {/* Actions */}
         <div className="flex items-center gap-1">
+          {onRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="text-white/40 hover:text-red-400 transition-colors p-1 mr-1"
+              aria-label="Remove Module"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onMoveUp}

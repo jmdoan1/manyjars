@@ -257,6 +257,32 @@ export function useDashboard({ moduleDefinitions }: UseDashboardOptions) {
     })
   }, [])
 
+  const removeModule = useCallback((moduleId: string) => {
+    setLayout((prev) => {
+      // Remove from modules list
+      const newModules = prev.modules.filter((m) => m.id !== moduleId)
+
+      // Remove from all layouts
+      const newLayouts = { ...prev.layouts }
+      Object.keys(newLayouts).forEach((key) => {
+        const colCount = Number(key)
+        const layoutData = newLayouts[colCount]
+        if (!layoutData) return
+
+        const newColumns = layoutData.columns.map((col) =>
+          col.filter((id) => id !== moduleId)
+        )
+        newLayouts[colCount] = { columns: newColumns }
+      })
+
+      return {
+        ...prev,
+        modules: newModules,
+        layouts: newLayouts,
+      }
+    })
+  }, [])
+
   const resetLayout = useCallback(() => {
     const defaultModules = moduleDefinitions.map((def, index) => ({
       id: `${def.type}-${Date.now()}-${index}`,
@@ -281,5 +307,6 @@ export function useDashboard({ moduleDefinitions }: UseDashboardOptions) {
     ensureLayoutForColumns,
     moveModule,
     addModule, // Export new function
+    removeModule,
   }
 }
