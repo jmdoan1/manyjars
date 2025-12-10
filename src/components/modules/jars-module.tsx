@@ -1,22 +1,9 @@
 // src/components/modules/jars-module.tsx
-
 import { useCallback, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { Archive, PlusCircle, Pencil, Trash2 } from 'lucide-react'
-import { NovelEditor, type NovelEditorHandle } from '@/components/novel-editor'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  type ActiveMention,
-  type MentionPosition,
-  validateJarTagName,
-} from '@/hooks/use-mentions'
+import { MentionEditor } from "../mentions/mention-editor"
 import type { ModuleProps } from '@/types/dashboard-types'
 
 export function JarsModule(_props: ModuleProps) {
@@ -31,12 +18,6 @@ export function JarsModule(_props: ModuleProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nameError, setNameError] = useState<string | null>(null)
-
-  const [descMention, setDescMention] = useState<ActiveMention | null>(null)
-  const [descMentionPos, setDescMentionPos] = useState<MentionPosition | null>(null)
-  const [highlightedIndex, setHighlightedIndex] = useState(-1)
-
-  const descEditorRef = useRef<NovelEditorHandle | null>(null)
 
   const { mutate: addJar } = useMutation({
     ...trpc.jars.create.mutationOptions(),
@@ -73,19 +54,11 @@ export function JarsModule(_props: ModuleProps) {
     setEditorKey((k) => k + 1)
     setEditingId(null)
     setNameError(null)
-    setDescMention(null)
-    setDescMentionPos(null)
-    setHighlightedIndex(-1)
   }, [])
 
   const handleSubmit = useCallback(() => {
     if (!name.trim()) {
       setNameError('Name is required')
-      return
-    }
-
-    if (!validateJarTagName(name)) {
-      setNameError('Name must contain only alphanumeric characters, hyphens, and underscores')
       return
     }
 
@@ -117,115 +90,7 @@ export function JarsModule(_props: ModuleProps) {
     }
   }, [deleteJar])
 
-  const handleDescriptionMentionChange = useCallback(
-    (mention: ActiveMention | null, position: MentionPosition | null) => {
-      setDescMention(mention)
-      setDescMentionPos(position)
-      if (mention) {
-        setHighlightedIndex(0)
-      } else {
-        setHighlightedIndex(-1)
-      }
-    },
-    [],
-  )
 
-  const applyDescriptionMention = useCallback(
-    (nameOrToken: string) => {
-      if (!descMention) return
-
-      const prefix = descMention.type === 'jar' ? '@' : '#'
-      const replacement = `${prefix}${nameOrToken} `
-
-      descEditorRef.current?.replaceText(
-        descMention.start,
-        descMention.end,
-        replacement,
-      )
-
-      setDescMention(null)
-      setDescMentionPos(null)
-      setHighlightedIndex(-1)
-    },
-    [descMention],
-  )
-
-  const handleDescriptionKeyDown = useCallback(
-    (event: KeyboardEvent): boolean => {
-      if (!descMention || !rows.length) return false
-
-      if (event.key === 'ArrowDown') {
-        setHighlightedIndex((prev) => (prev < rows.length - 1 ? prev + 1 : 0))
-        return true
-      }
-
-      if (event.key === 'ArrowUp') {
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : rows.length - 1))
-        return true
-      }
-
-      if (event.key === 'Enter' || event.key === 'Tab') {
-        const idx = highlightedIndex >= 0 ? highlightedIndex : 0
-        const row = rows[idx]
-        if (row) {
-          if (row.kind === 'typed') {
-            setDescMention(null)
-            setDescMentionPos(null)
-            setHighlightedIndex(-1)
-          } else if (row.kind === 'suggestion') {
-            applyDescriptionMention(row.item.name)
-          }
-          return true
-        }
-      }
-
-      if (event.key === 'Escape') {
-        setDescMention(null)
-        setDescMentionPos(null)
-        setHighlightedIndex(-1)
-        return true
-      }
-
-      return false
-    },
-    [descMention, highlightedIndex, applyDescriptionMention],
-  )
-
-  // Build suggestion rows
-  const query = descMention?.query ?? ''
-  
-  let filteredList: typeof jars | typeof tags = []
-  if (descMention?.type === 'jar') {
-    const jarList = jars ?? []
-    filteredList = query
-      ? jarList.filter((item) => item.name.toLowerCase().startsWith(query.toLowerCase()))
-      : jarList
-  } else if (descMention?.type === 'tag') {
-    const tagList = tags ?? []
-    filteredList = query
-      ? tagList.filter((item) => item.name.toLowerCase().startsWith(query.toLowerCase()))
-      : tagList
-  }
-  filteredList = filteredList.slice(0, 5)
-
-  type Row =
-    | { kind: 'typed'; label: string; description: string }
-    | { kind: 'suggestion'; item: NonNullable<typeof jars>[number] | NonNullable<typeof tags>[number] }
-
-  const rows: Row[] = []
-  if (descMention) {
-    if (query) {
-      const prefix = descMention.type === 'jar' ? '@' : '#'
-      rows.push({
-        kind: 'typed',
-        label: `${prefix}${query}`,
-        description: descMention.type === 'jar' ? 'Use this as a new jar' : 'Use this as a new tag',
-      })
-    }
-    for (const item of filteredList) {
-      rows.push({ kind: 'suggestion', item })
-    }
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -266,86 +131,16 @@ export function JarsModule(_props: ModuleProps) {
           </div>
 
           <div className="relative">
-            <NovelEditor
+            <MentionEditor
               key={editorKey}
-              ref={descEditorRef}
+              ref={null}
+              jars={jars ?? []}
+              tags={tags ?? []}
               showToolbar={false}
               onHTMLChange={setDescriptionHtml}
-              onTextChange={() => {}}
-              onMentionChange={handleDescriptionMentionChange}
-              onKeyDown={handleDescriptionKeyDown}
               className="w-full"
               editorClassName="focus:ring-2 focus:ring-purple-400/50"
             />
-
-            {/* Mention popup */}
-            {descMention && descMentionPos && rows.length > 0 && (
-              <div
-                className="absolute z-20 w-72"
-                style={{
-                  top: descMentionPos.top,
-                  left: descMentionPos.left,
-                }}
-              >
-                <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
-                  <CommandList>
-                    <CommandEmpty className="px-3 py-2 text-xs text-white/60">
-                      No matches.
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {rows.map((row, index) => {
-                        const isActive = index === highlightedIndex
-
-                        if (row.kind === 'typed') {
-                          return (
-                            <CommandItem
-                              key="typed-option"
-                              value={row.label}
-                              onSelect={() => {
-                                setDescMention(null)
-                                setDescMentionPos(null)
-                                setHighlightedIndex(-1)
-                              }}
-                              onMouseEnter={() => setHighlightedIndex(index)}
-                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                                isActive ? 'bg-purple-500/20' : ''
-                              }`}
-                            >
-                              <span className="text-white">{row.label}</span>
-                              <span className="text-[11px] text-white/60">
-                                {row.description}
-                              </span>
-                            </CommandItem>
-                          )
-                        }
-
-                        return (
-                          <CommandItem
-                            key={row.item.id}
-                            value={row.item.name}
-                            onSelect={() => applyDescriptionMention(row.item.name)}
-                            onMouseEnter={() => setHighlightedIndex(index)}
-                            className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                              isActive ? 'bg-purple-500/20' : ''
-                            } text-white`}
-                          >
-                            <span>
-                              {descMention?.type === 'jar' ? '@' : '#'}
-                              {row.item.name}
-                            </span>
-                            {row.item.description && (
-                              <span className="ml-2 text-[11px] text-white/60 truncate">
-                                {row.item.description}
-                              </span>
-                            )}
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            )}
           </div>
 
           <div className="flex gap-2">

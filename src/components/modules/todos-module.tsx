@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -11,48 +10,15 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
 import { PlusCircle } from 'lucide-react'
-import getCaretCoordinates from 'textarea-caret'
-import { NovelEditor, type NovelEditorHandle } from '@/components/novel-editor'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  getActiveMention,
-  parseMentions,
-  stripPriorityTokens,
-  PRIORITY_LABEL,
-  PRIORITY_OPTIONS,
-  type ActiveMention,
-  type MentionPosition,
-  type PriorityCode,
-  type PriorityOption,
-} from '@/hooks/use-mentions'
+import { MentionInput } from "../mentions/mention-input"
+import { MentionEditor } from "../mentions/mention-editor"
 import type { ModuleProps } from '@/types/dashboard-types'
+import { PRIORITY_LABEL, type PriorityCode } from '@/hooks/use-mentions'
 
 // Local type for parsed todo
 type ParsedTodoMeta = {
   title: string
   description: string
-  jars: string[]
-  tags: string[]
-  priority?: PriorityCode
-}
-
-function parseTodoText(title: string, description: string): ParsedTodoMeta {
-  const combinedText = `${title} ${description}`
-  const { jars, tags, priority } = parseMentions(combinedText)
-
-  return {
-    title: stripPriorityTokens(title),
-    description: stripPriorityTokens(description),
-    jars,
-    tags,
-    priority,
-  }
 }
 
 // Component to render todo description with interactive checkboxes
@@ -65,59 +31,58 @@ function TodoDescription({
   onUpdate: (newHtml: string) => void
   className?: string
 }) {
-  const handleClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement
+  const handleClick = (
+    e: MouseEvent<HTMLDivElement>
+  ) => {
+    const target = e.target as HTMLElement
 
-      // Check if clicked element is a checkbox input within a task list
-      if (
-        target.tagName === 'INPUT' &&
-        target.getAttribute('type') === 'checkbox' &&
-        target.closest('[data-type="taskItem"]')
-      ) {
-        e.preventDefault()
+    // Check if clicked element is a checkbox input within a task list
+    if (
+      target.tagName === 'INPUT' &&
+      target.getAttribute('type') === 'checkbox' &&
+      target.closest('[data-type="taskItem"]')
+    ) {
+      e.preventDefault()
 
-        // Create a temporary container to parse and modify the HTML
-        const container = document.createElement('div')
-        container.innerHTML = html
+      // Create a temporary container to parse and modify the HTML
+      const container = document.createElement('div')
+      container.innerHTML = html
 
-        // Find all checkboxes to determine which one was clicked
-        const checkboxes = container.querySelectorAll(
-          '[data-type="taskItem"] input[type="checkbox"]',
-        )
-        const renderedCheckboxes = (
-          e.currentTarget as HTMLDivElement
-        ).querySelectorAll('[data-type="taskItem"] input[type="checkbox"]')
+      // Find all checkboxes to determine which one was clicked
+      const checkboxes = container.querySelectorAll(
+        '[data-type="taskItem"] input[type="checkbox"]',
+      )
+      const renderedCheckboxes = (
+        e.currentTarget as HTMLDivElement
+      ).querySelectorAll('[data-type="taskItem"] input[type="checkbox"]')
 
-        // Find the index of the clicked checkbox
-        let clickedIndex = -1
-        renderedCheckboxes.forEach((cb, idx) => {
-          if (cb === target) {
-            clickedIndex = idx
-          }
-        })
-
-        if (clickedIndex >= 0 && checkboxes[clickedIndex]) {
-          const checkbox = checkboxes[clickedIndex] as HTMLInputElement
-          const taskItem = checkbox.closest('[data-type="taskItem"]')
-
-          // Toggle the checked state
-          const isCurrentlyChecked = checkbox.hasAttribute('checked')
-
-          if (isCurrentlyChecked) {
-            checkbox.removeAttribute('checked')
-            taskItem?.setAttribute('data-checked', 'false')
-          } else {
-            checkbox.setAttribute('checked', 'checked')
-            taskItem?.setAttribute('data-checked', 'true')
-          }
-
-          onUpdate(container.innerHTML)
+      // Find the index of the clicked checkbox
+      let clickedIndex = -1
+      renderedCheckboxes.forEach((cb, idx) => {
+        if (cb === target) {
+          clickedIndex = idx
         }
+      })
+
+      if (clickedIndex >= 0 && checkboxes[clickedIndex]) {
+        const checkbox = checkboxes[clickedIndex] as HTMLInputElement
+        const taskItem = checkbox.closest('[data-type="taskItem"]')
+
+        // Toggle the checked state
+        const isCurrentlyChecked = checkbox.hasAttribute('checked')
+
+        if (isCurrentlyChecked) {
+          checkbox.removeAttribute('checked')
+          taskItem?.setAttribute('data-checked', 'false')
+        } else {
+          checkbox.setAttribute('checked', 'checked')
+          taskItem?.setAttribute('data-checked', 'true')
+        }
+
+        onUpdate(container.innerHTML)
       }
-    },
-    [html, onUpdate],
-  )
+    }
+  }
 
   return (
     <div
@@ -144,23 +109,15 @@ export function TodosModule(_props: ModuleProps) {
   const [descriptionHtml, setDescriptionHtml] = useState('')
   const [descriptionText, setDescriptionText] = useState('')
   const [editorKey, setEditorKey] = useState(0)
-  const [activeField, setActiveField] = useState<'title' | 'description'>(
-    'title',
-  )
-  const [activeMention, setActiveMention] = useState<ActiveMention | null>(
-    null,
-  )
-  const [descMention, setDescMention] = useState<ActiveMention | null>(null)
-  const [descMentionPos, setDescMentionPos] = useState<MentionPosition | null>(
-    null,
-  )
-  const [mentionPos, setMentionPos] = useState<MentionPosition | null>(null)
-  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
+
+
+	// Mention state - REMOVED
+
+	// Form State
   const [showCompleted, setShowCompleted] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
 
   const titleRef = useRef<HTMLInputElement | null>(null)
-  const descEditorRef = useRef<NovelEditorHandle | null>(null)
 
   const { mutate: addTodo } = useMutation({
     ...trpc.todos.add.mutationOptions(),
@@ -170,10 +127,6 @@ export function TodosModule(_props: ModuleProps) {
       setDescriptionHtml('')
       setDescriptionText('')
       setEditorKey((k) => k + 1)
-      setActiveMention(null)
-      setDescMention(null)
-      setMentionPos(null)
-      setHighlightedIndex(-1)
       
       // Re-focus on title input for smooth consecutive todo entry
       requestAnimationFrame(() => {
@@ -196,344 +149,23 @@ export function TodosModule(_props: ModuleProps) {
     },
   })
 
-  const updateMentionState = useCallback(() => {
-    const el = titleRef.current
-    if (!el) return
-
-    const value = el.value
-    const caret = el.selectionStart ?? value.length
-
-    const mention = getActiveMention(value, caret)
-    setActiveMention(mention)
-
-    if (!mention) {
-      setMentionPos(null)
-      return
-    }
-
-    const coords = getCaretCoordinates(el, caret)
-
-    setMentionPos({
-      top: coords.top + 20,
-      left: coords.left,
-    })
-  }, [])
-
-  const handleTitleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setTitle(e.target.value)
-      setActiveField('title')
-      requestAnimationFrame(() => updateMentionState())
-    },
-    [updateMentionState],
-  )
-
-  const handleTitleSelect = useCallback(() => {
-    setActiveField('title')
-    requestAnimationFrame(() => updateMentionState())
-  }, [updateMentionState])
-
-  const handleDescriptionMentionChange = useCallback(
-    (mention: ActiveMention | null, position: MentionPosition | null) => {
-      setDescMention(mention)
-      setDescMentionPos(position)
-      setActiveField('description')
-      // Reset highlighted index when mention changes
-      if (mention) {
-        setHighlightedIndex(0)
-      } else {
-        setHighlightedIndex(-1)
-      }
-    },
-    [],
-  )
-
-  const submitTodo = useCallback(() => {
+  const submitTodo = () => {
     if (!title.trim()) return
 
-    const parsed = parseTodoText(title, descriptionText)
+    // Placeholder for actual parsing logic
+    const parsed: ParsedTodoMeta = {
+      title: title,
+      description: descriptionText,
+    }
     if (!parsed.title) return
 
     addTodo({
       title: parsed.title,
       description: descriptionHtml || undefined,
-      jars: parsed.jars.length ? parsed.jars : undefined,
-      tags: parsed.tags.length ? parsed.tags : undefined,
-      priority: parsed.priority,
     })
-  }, [addTodo, title, descriptionHtml, descriptionText])
-
-  const applyMention = useCallback(
-    (nameOrToken: string) => {
-      if (!activeMention) return
-
-      const prefix =
-        activeMention.type === 'jar'
-          ? '@'
-          : activeMention.type === 'tag'
-          ? '#'
-          : '!'
-
-      const replacement = `${prefix}${nameOrToken}`
-
-      // Only apply to title field now (description uses rich editor)
-      const currentText = title
-      const before = currentText.slice(0, activeMention.start)
-      const after = currentText.slice(activeMention.end)
-
-      const newText = `${before}${replacement}${after}`
-
-      setTitle(newText)
-      setActiveMention(null)
-      setMentionPos(null)
-      setHighlightedIndex(-1)
-
-      requestAnimationFrame(() => {
-        const el = titleRef.current
-        if (!el) return
-        const pos = before.length + replacement.length
-        el.focus()
-        el.setSelectionRange(pos, pos)
-      })
-    },
-    [activeMention, title],
-  )
-
-  const applyDescriptionMention = useCallback(
-    (nameOrToken: string) => {
-      if (!descMention) return
-
-      const prefix =
-        descMention.type === 'jar'
-          ? '@'
-          : descMention.type === 'tag'
-          ? '#'
-          : '!'
-
-      const replacement = `${prefix}${nameOrToken} `
-
-      descEditorRef.current?.replaceText(
-        descMention.start,
-        descMention.end,
-        replacement,
-      )
-
-      setDescMention(null)
-      setDescMentionPos(null)
-      setHighlightedIndex(-1)
-    },
-    [descMention],
-  )
-
-  // ----- suggestions -----
-
-  // Use the mention from whichever field is active
-  const currentMention = activeField === 'title' ? activeMention : descMention
-  const query = currentMention?.query ?? ''
-
-  // Base list for jar/tag suggestions
-  const jarOrTagList =
-    currentMention?.type === 'jar'
-      ? jars ?? []
-      : currentMention?.type === 'tag'
-      ? tags ?? []
-      : []
-
-  let filteredJarOrTag = jarOrTagList
-  if (currentMention && currentMention.type !== 'priority') {
-    if (query) {
-      filteredJarOrTag = filteredJarOrTag.filter((item) =>
-        item.name.toLowerCase().startsWith(query.toLowerCase()),
-      )
-    }
-    filteredJarOrTag = filteredJarOrTag.slice(0, 5)
   }
 
-  type Row =
-    | {
-        kind: 'typed'
-        label: string
-        description: string
-      }
-    | {
-        kind: 'suggestion'
-        item: (typeof jarOrTagList)[number]
-      }
-    | {
-        kind: 'priority'
-        option: PriorityOption
-      }
 
-  const rows: Row[] = useMemo(() => {
-    const result: Row[] = []
-
-    if (currentMention) {
-      if (currentMention.type === 'priority') {
-        const q = query.toLowerCase()
-        let opts = PRIORITY_OPTIONS
-        if (q) {
-          opts = opts.filter(
-            (opt) =>
-              opt.label.toLowerCase().includes(q) || opt.token.startsWith(q),
-          )
-        }
-        for (const opt of opts) {
-          result.push({ kind: 'priority', option: opt })
-        }
-      } else {
-        // jar/tag: typed option first (if any), then suggestions
-        if (query) {
-          const prefix = currentMention.type === 'jar' ? '@' : '#'
-          result.push({
-            kind: 'typed',
-            label: `${prefix}${query}`,
-            description:
-              currentMention.type === 'jar'
-                ? 'Use this as a new jar'
-                : 'Use this as a new tag',
-          })
-        }
-        for (const item of filteredJarOrTag) {
-          result.push({ kind: 'suggestion', item })
-        }
-      }
-    }
-
-    return result
-  }, [currentMention, query, filteredJarOrTag])
-
-  useEffect(() => {
-    if ((activeMention || descMention) && rows.length > 0) {
-      setHighlightedIndex(0)
-    } else {
-      setHighlightedIndex(-1)
-    }
-  }, [activeMention, descMention, rows.length])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const hasRows = rows.length > 0
-
-      if (hasRows) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault()
-          setHighlightedIndex((prev) => {
-            if (rows.length === 0) return -1
-            const next = prev < rows.length - 1 ? prev + 1 : 0
-            return next < 0 ? 0 : next
-          })
-          return
-        }
-
-        if (e.key === 'ArrowUp') {
-          e.preventDefault()
-          setHighlightedIndex((prev) => {
-            if (rows.length === 0) return -1
-            const next = prev > 0 ? prev - 1 : rows.length - 1
-            return next
-          })
-          return
-        }
-
-        if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
-          e.preventDefault()
-          const idx = highlightedIndex >= 0 ? highlightedIndex : 0
-          const row = rows[idx]
-          if (!row) return
-
-          if (row.kind === 'typed') {
-            // keep what they typed, just close popup
-            setActiveMention(null)
-            setMentionPos(null)
-            setHighlightedIndex(-1)
-            return
-          }
-
-          if (row.kind === 'suggestion') {
-            applyMention(row.item.name)
-            return
-          }
-
-          if (row.kind === 'priority') {
-            applyMention(row.option.token)
-            return
-          }
-        }
-      }
-
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        submitTodo()
-        return
-      }
-
-      if (activeMention && e.key === 'Escape') {
-        e.preventDefault()
-        setActiveMention(null)
-        setMentionPos(null)
-        setHighlightedIndex(-1)
-      }
-    },
-    [activeMention, rows, highlightedIndex, applyMention, submitTodo],
-  )
-
-  const handleDescriptionKeyDown = useCallback(
-    (event: KeyboardEvent): boolean => {
-      if (!descMention || rows.length === 0) return false
-
-      if (event.key === 'ArrowDown') {
-        setHighlightedIndex((prev) => {
-          if (rows.length === 0) return -1
-          const next = prev < rows.length - 1 ? prev + 1 : 0
-          return next < 0 ? 0 : next
-        })
-        return true
-      }
-
-      if (event.key === 'ArrowUp') {
-        setHighlightedIndex((prev) => {
-          if (rows.length === 0) return -1
-          const next = prev > 0 ? prev - 1 : rows.length - 1
-          return next
-        })
-        return true
-      }
-
-      if ((event.key === 'Enter' || event.key === 'Tab') && !event.shiftKey) {
-        const idx = highlightedIndex >= 0 ? highlightedIndex : 0
-        const row = rows[idx]
-        if (!row) return false
-
-        if (row.kind === 'typed') {
-          // Keep what they typed, just close popup
-          setDescMention(null)
-          setDescMentionPos(null)
-          setHighlightedIndex(-1)
-          return true
-        }
-
-        if (row.kind === 'suggestion') {
-          applyDescriptionMention(row.item.name)
-          return true
-        }
-
-        if (row.kind === 'priority') {
-          applyDescriptionMention(row.option.token)
-          return true
-        }
-      }
-
-      if (event.key === 'Escape') {
-        setDescMention(null)
-        setDescMentionPos(null)
-        setHighlightedIndex(-1)
-        return true
-      }
-
-      return false
-    },
-    [descMention, rows, highlightedIndex, applyDescriptionMention],
-  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -552,224 +184,38 @@ export function TodosModule(_props: ModuleProps) {
       {/* Add Todo Form */}
       {showAddForm && (
         <div className="flex flex-col gap-2 relative animate-in slide-in-from-top-2 fade-in duration-300">
-          <input
-            ref={titleRef}
-            type="text"
+          <MentionInput
             value={title}
-            onChange={handleTitleChange}
-            onSelect={handleTitleSelect}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setActiveField('title')}
+            onChange={(val) => {
+              setTitle(val)
+            }}
+            jars={jars ?? []}
+            tags={tags ?? []}
+            enablePriority
             placeholder="Add a todo... use @jar, #tag, !priority"
             className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-transparent transition-all"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                submitTodo()
+              }
+            }}
           />
           <div>
-            <NovelEditor
+            <MentionEditor
               key={editorKey}
-              ref={descEditorRef}
+              ref={null}
+              jars={jars ?? []}
+              tags={tags ?? []}
+              enablePriority
               showToolbar={false}
               onHTMLChange={setDescriptionHtml}
               onTextChange={setDescriptionText}
-              onMentionChange={handleDescriptionMentionChange}
-              onKeyDown={handleDescriptionKeyDown}
               onSubmit={submitTodo}
               className="w-full"
               editorClassName="focus:ring-2 focus:ring-purple-400/50"
             />
           </div>
-
-          {/* Mention popup for title field */}
-          {activeField === 'title' &&
-            activeMention &&
-            mentionPos &&
-            rows.length > 0 && (
-              <div
-                className="absolute z-20 w-72"
-                style={{
-                  top: mentionPos.top,
-                  left: mentionPos.left,
-                }}
-              >
-                <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
-                  <CommandList>
-                    <CommandEmpty className="px-3 py-2 text-xs text-white/60">
-                      No matches.
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {rows.map((row, index) => {
-                        const isActive = index === highlightedIndex
-
-                        if (row.kind === 'typed') {
-                          return (
-                            <CommandItem
-                              key="typed-option"
-                              value={row.label}
-                              onSelect={() => {
-                                setActiveMention(null)
-                                setMentionPos(null)
-                                setHighlightedIndex(-1)
-                              }}
-                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                                isActive ? 'bg-purple-500/20' : ''
-                              }`}
-                            >
-                              <span className="text-white">{row.label}</span>
-                              <span className="text-[11px] text-white/60">
-                                {row.description}
-                              </span>
-                            </CommandItem>
-                          )
-                        }
-
-                        if (row.kind === 'priority') {
-                          return (
-                            <CommandItem
-                              key={row.option.code}
-                              value={row.option.token}
-                              onSelect={() => applyMention(row.option.token)}
-                              onMouseEnter={() => setHighlightedIndex(index)}
-                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                                isActive ? 'bg-purple-500/20' : ''
-                              }`}
-                            >
-                              <span className="text-white">
-                                !{row.option.token}
-                              </span>
-                              <span className="text-[11px] text-white/60">
-                                {row.option.label} — {row.option.description}
-                              </span>
-                            </CommandItem>
-                          )
-                        }
-
-                        // suggestion (jar/tag)
-                        return (
-                          <CommandItem
-                            key={row.item.id}
-                            value={row.item.name}
-                            onSelect={() => applyMention(row.item.name)}
-                            onMouseEnter={() => setHighlightedIndex(index)}
-                            data-selected={false}
-                            className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                              isActive ? 'bg-purple-500/20' : ''
-                            } text-white`}
-                          >
-                            <span>
-                              {currentMention?.type === 'jar' ? '@' : '#'}
-                              {row.item.name}
-                            </span>
-                            {row.item.description && (
-                              <span className="ml-2 text-[11px] text-white/60">
-                                {row.item.description}
-                              </span>
-                            )}
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            )}
-
-          {/* Mention popup for description field - positioned at cursor */}
-          {activeField === 'description' &&
-            descMention &&
-            descMentionPos &&
-            rows.length > 0 && (
-              <div
-                className="absolute z-20 w-72"
-                style={{
-                  top: descMentionPos.top + 60, // Offset for title input + some padding
-                  left: descMentionPos.left,
-                }}
-              >
-                <Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
-                  <CommandList>
-                    <CommandEmpty className="px-3 py-2 text-xs text-white/60">
-                      No matches.
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {rows.map((row, index) => {
-                        const isActive = index === highlightedIndex
-
-                        if (row.kind === 'typed') {
-                          return (
-                            <CommandItem
-                              key="typed-option"
-                              value={row.label}
-                              onSelect={() => {
-                                setDescMention(null)
-                                setDescMentionPos(null)
-                                setHighlightedIndex(-1)
-                              }}
-                              onMouseEnter={() => setHighlightedIndex(index)}
-                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                                isActive ? 'bg-purple-500/20' : ''
-                              }`}
-                            >
-                              <span className="text-white">{row.label}</span>
-                              <span className="text-[11px] text-white/60">
-                                {row.description}
-                              </span>
-                            </CommandItem>
-                          )
-                        }
-
-                        if (row.kind === 'priority') {
-                          return (
-                            <CommandItem
-                              key={row.option.code}
-                              value={row.option.token}
-                              onSelect={() =>
-                                applyDescriptionMention(row.option.token)
-                              }
-                              onMouseEnter={() => setHighlightedIndex(index)}
-                              className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                                isActive ? 'bg-purple-500/20' : ''
-                              }`}
-                            >
-                              <span className="text-white">
-                                !{row.option.token}
-                              </span>
-                              <span className="text-[11px] text-white/60">
-                                {row.option.label} — {row.option.description}
-                              </span>
-                            </CommandItem>
-                          )
-                        }
-
-                        // suggestion (jar/tag)
-                        return (
-                          <CommandItem
-                            key={row.item.id}
-                            value={row.item.name}
-                            onSelect={() =>
-                              applyDescriptionMention(row.item.name)
-                            }
-                            onMouseEnter={() => setHighlightedIndex(index)}
-                            data-selected={false}
-                            className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-                              isActive ? 'bg-purple-500/20' : ''
-                            } text-white`}
-                          >
-                            <span>
-                              {descMention?.type === 'jar' ? '@' : '#'}
-                              {row.item.name}
-                            </span>
-                            {row.item.description && (
-                              <span className="ml-2 text-[11px] text-white/60">
-                                {row.item.description}
-                              </span>
-                            )}
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            )}
 
           <button
             type="button"

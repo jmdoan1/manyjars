@@ -1,23 +1,10 @@
 // src/components/modules/notes-module.tsx
-
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { FileText, Pencil, PlusCircle, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import getCaretCoordinates from "textarea-caret";
-import { NovelEditor, type NovelEditorHandle } from "@/components/novel-editor";
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandItem,
-	CommandList,
-} from "@/components/ui/command";
-import {
-	type ActiveMention,
-	getActiveMention,
-	type MentionPosition,
-	parseMentions,
-} from "@/hooks/use-mentions";
+import { useCallback, useState } from "react";
+import { MentionInput } from "../mentions/mention-input";
+import { MentionEditor } from "../mentions/mention-editor";
+import { parseMentions } from "@/hooks/use-mentions";
 import { useTRPC } from "@/integrations/trpc/react";
 import type { ModuleProps } from "@/types/dashboard-types";
 
@@ -34,17 +21,6 @@ export function NotesModule(_props: ModuleProps) {
 	const [editorKey, setEditorKey] = useState(0);
 	const [showAddForm, setShowAddForm] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
-
-	// Mention state
-	const [activeField, setActiveField] = useState<"title" | "content">("title");
-	const [activeMention, setActiveMention] = useState<ActiveMention | null>(
-		null,
-	);
-	const [mentionPos, setMentionPos] = useState<MentionPosition | null>(null);
-	const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-	const titleRef = useRef<HTMLInputElement | null>(null);
-	const contentEditorRef = useRef<NovelEditorHandle | null>(null);
 
 	const { mutate: addNote } = useMutation({
 		...trpc.notes.create.mutationOptions(),
@@ -75,9 +51,6 @@ export function NotesModule(_props: ModuleProps) {
 		setContentText("");
 		setEditorKey((k) => k + 1);
 		setEditingId(null);
-		setActiveMention(null);
-		setMentionPos(null);
-		setHighlightedIndex(-1);
 	}, []);
 
 	const handleSubmit = useCallback(() => {
@@ -132,181 +105,7 @@ export function NotesModule(_props: ModuleProps) {
 		[deleteNote],
 	);
 
-	// --- Mention Logic ---
 
-	// Title Input Mention
-	const updateTitleMentionState = useCallback(() => {
-		const el = titleRef.current;
-		if (!el) return;
-
-		const value = el.value;
-		const caret = el.selectionStart ?? value.length;
-		const mention = getActiveMention(value, caret);
-
-		if (activeField === "title") {
-			setActiveMention(mention);
-			if (mention) {
-				const coords = getCaretCoordinates(el, caret);
-				setMentionPos({ top: coords.top + 20, left: coords.left });
-			} else {
-				setMentionPos(null);
-			}
-		}
-	}, [activeField]);
-
-	const handleTitleChange = useCallback(
-		(e: React.ChangeEvent<HTMLInputElement>) => {
-			setTitle(e.target.value);
-			setActiveField("title");
-			requestAnimationFrame(updateTitleMentionState);
-		},
-		[updateTitleMentionState],
-	);
-
-	// Content Editor Mention
-	const handleContentMentionChange = useCallback(
-		(mention: ActiveMention | null, position: MentionPosition | null) => {
-			setActiveField("content");
-			setActiveMention(mention);
-			setMentionPos(position);
-			if (mention) setHighlightedIndex(0);
-		},
-		[],
-	);
-
-	// Suggestions
-	const query = activeMention?.query ?? "";
-
-	// Combine jars and tags for suggestion list
-	const suggestionList = useMemo(() => {
-		if (!activeMention) return [];
-		const list =
-			activeMention.type === "jar"
-				? (jars ?? [])
-				: activeMention.type === "tag"
-					? (tags ?? [])
-					: [];
-		if (!query) return list.slice(0, 5);
-		return list
-			.filter((item) => item.name.toLowerCase().startsWith(query.toLowerCase()))
-			.slice(0, 5);
-	}, [activeMention, jars, tags, query]);
-
-	type Row =
-		| { kind: "typed"; label: string; description: string }
-		| {
-				kind: "suggestion";
-				item: { id: string; name: string; description?: string | null };
-		  };
-
-	const rows: Row[] = useMemo(() => {
-		const r: Row[] = [];
-		if (!activeMention) return r;
-
-		if (query) {
-			const prefix = activeMention.type === "jar" ? "@" : "#";
-			r.push({
-				kind: "typed",
-				label: `${prefix}${query}`,
-				description: activeMention.type === "jar" ? "New jar" : "New tag",
-			});
-		}
-		for (const item of suggestionList) {
-			r.push({ kind: "suggestion", item });
-		}
-		return r;
-	}, [activeMention, query, suggestionList]);
-
-	// Reset highlight when rows change
-	useEffect(() => {
-		if (activeMention && rows.length > 0) setHighlightedIndex(0);
-		else setHighlightedIndex(-1);
-	}, [activeMention, rows.length]);
-
-	const applyMention = useCallback(
-		(name: string) => {
-			if (!activeMention) return;
-
-			const prefix = activeMention.type === "jar" ? "@" : "#";
-			const replacement = `${prefix}${name} `;
-
-			if (activeField === "title") {
-				const current = title;
-				const before = current.slice(0, activeMention.start);
-				const after = current.slice(activeMention.end);
-				const newValue = `${before}${replacement}${after}`;
-				setTitle(newValue);
-				setActiveMention(null);
-				setMentionPos(null);
-
-				requestAnimationFrame(() => {
-					const el = titleRef.current;
-					if (el) {
-						const pos = before.length + replacement.length;
-						el.focus();
-						el.setSelectionRange(pos, pos);
-					}
-				});
-			} else {
-				// Content editor
-				contentEditorRef.current?.replaceText(
-					activeMention.start,
-					activeMention.end,
-					replacement,
-				);
-				setActiveMention(null);
-				setMentionPos(null);
-			}
-		},
-		[activeMention, activeField, title],
-	);
-
-	const handleKeyDown = useCallback(
-		(e: React.KeyboardEvent | KeyboardEvent) => {
-			if (!activeMention || rows.length === 0) return false;
-
-			if (e.key === "ArrowDown") {
-				e.preventDefault();
-				setHighlightedIndex((prev) => (prev < rows.length - 1 ? prev + 1 : 0));
-				return true;
-			}
-			if (e.key === "ArrowUp") {
-				e.preventDefault();
-				setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : rows.length - 1));
-				return true;
-			}
-			if ((e.key === "Enter" || e.key === "Tab") && !e.shiftKey) {
-				e.preventDefault(); // Important for forms
-				const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
-				const row = rows[idx];
-				if (row) {
-					if (row.kind === "typed") {
-						setActiveMention(null);
-						setMentionPos(null);
-					} else {
-						applyMention(row.item.name);
-					}
-					return true;
-				}
-			}
-			if (e.key === "Escape") {
-				e.preventDefault();
-				setActiveMention(null);
-				setMentionPos(null);
-				return true;
-			}
-			return false;
-		},
-		[activeMention, rows, highlightedIndex, applyMention],
-	);
-
-	// Wrapper for NovelEditor keydown which returns boolean
-	const handleEditorKeyDown = useCallback(
-		(e: KeyboardEvent) => {
-			return handleKeyDown(e as unknown as React.KeyboardEvent);
-		},
-		[handleKeyDown],
-	);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -330,96 +129,34 @@ export function NotesModule(_props: ModuleProps) {
 			{/* Form */}
 			{showAddForm && (
 				<div className="flex flex-col gap-3 relative animate-in slide-in-from-top-2 fade-in duration-300">
-					<input
-						ref={titleRef}
-						type="text"
+					<MentionInput
 						value={title}
-						onChange={handleTitleChange}
-						onKeyDown={(e) => {
-							if (!handleKeyDown(e)) {
-								// Allow normal enter to submit if not handling mention
-								if (e.key === "Enter") handleSubmit();
-							}
-						}}
-						onFocus={() => setActiveField("title")}
+						onChange={(val) => setTitle(val)}
+						jars={jars ?? []}
+						tags={tags ?? []}
 						placeholder="Title (optional)"
 						className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400/50 focus:border-transparent transition-all font-medium"
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && !e.shiftKey) {
+								e.preventDefault();
+								handleSubmit();
+							}
+						}}
 					/>
 
 					<div className="relative">
-						<NovelEditor
+						<MentionEditor
 							key={editorKey}
-							ref={contentEditorRef}
+							ref={null}
+							jars={jars ?? []}
+							tags={tags ?? []}
 							showToolbar={false}
 							onHTMLChange={setContentHtml}
 							onTextChange={setContentText}
-							onMentionChange={handleContentMentionChange}
-							onKeyDown={handleEditorKeyDown}
+							initialContent={contentHtml}
 							className="w-full"
 							editorClassName="focus:ring-2 focus:ring-purple-400/50 min-h-[150px]"
 						/>
-
-						{/* Mention Popup */}
-						{activeMention && mentionPos && rows.length > 0 && (
-							<div
-								className="absolute z-50 w-72"
-								style={{
-									top:
-										activeField === "title" ? mentionPos.top : mentionPos.top, // Relative to container
-									left: mentionPos.left,
-								}}
-							>
-								<Command className="rounded-md border border-white/20 bg-slate-900/95 text-sm text-white shadow-lg">
-									<CommandList>
-										<CommandEmpty className="px-3 py-2 text-xs text-white/60">
-											No matches.
-										</CommandEmpty>
-										<CommandGroup>
-											{rows.map((row, index) => {
-												const isActive = index === highlightedIndex;
-												if (row.kind === "typed") {
-													return (
-														<CommandItem
-															key="typed"
-															value={row.label}
-															onSelect={() => {
-																setActiveMention(null);
-																setMentionPos(null);
-															}}
-															onMouseEnter={() => setHighlightedIndex(index)}
-															className={`flex flex-col items-start gap-0.5 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-																isActive ? "bg-purple-500/20" : ""
-															}`}
-														>
-															<span className="text-white">{row.label}</span>
-															<span className="text-[11px] text-white/60">
-																{row.description}
-															</span>
-														</CommandItem>
-													);
-												}
-												return (
-													<CommandItem
-														key={row.item.id}
-														value={row.item.name}
-														onSelect={() => applyMention(row.item.name)}
-														onMouseEnter={() => setHighlightedIndex(index)}
-														className={`flex items-center gap-2 data-[selected=true]:bg-unset data-[selected=true]:text-unset ${
-															isActive ? "bg-purple-500/20" : ""
-														} text-white`}
-													>
-														<span>
-															{activeMention.type === "jar" ? "@" : "#"}
-															{row.item.name}
-														</span>
-													</CommandItem>
-												);
-											})}
-										</CommandGroup>
-									</CommandList>
-								</Command>
-							</div>
-						)}
 					</div>
 
 					<div className="flex gap-2">

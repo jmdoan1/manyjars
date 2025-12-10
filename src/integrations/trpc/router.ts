@@ -1,7 +1,8 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 import { prisma } from "@/db";
-import { parseMentions, validateJarTagName } from "@/hooks/use-mentions";
+import { validateJarTagName, type PriorityCode } from "@/hooks/use-mentions";
+import { extractAndEnsureMentions } from "./mentions-helper";
 import { createTRPCRouter, protectedProcedure } from "./init";
 
 const todoBaseInclude = {
@@ -17,38 +18,6 @@ const todoUpsertMetaInput = z.object({
 	tags: z.array(z.string().min(1)).optional(),
 	priority: priorityEnum.optional(),
 });
-
-async function ensureEntitiesExist(
-	userId: string,
-	jarNames: string[],
-	tagNames: string[],
-) {
-	const uniqueJars = [...new Set(jarNames)];
-	const uniqueTags = [...new Set(tagNames)];
-
-	const [startJars, startTags] = await Promise.all([
-		Promise.all(
-			uniqueJars.map((name) =>
-				prisma.jar.upsert({
-					where: { userId_name: { userId, name } },
-					create: { userId, name },
-					update: {},
-				}),
-			),
-		),
-		Promise.all(
-			uniqueTags.map((name) =>
-				prisma.tag.upsert({
-					where: { userId_name: { userId, name } },
-					create: { userId, name },
-					update: {},
-				}),
-			),
-		),
-	]);
-
-	return { jars: startJars, tags: startTags };
-}
 
 const todosRouter = {
 	list: protectedProcedure.query(async ({ ctx }) => {
@@ -72,52 +41,29 @@ const todosRouter = {
 		.mutation(async ({ input, ctx }) => {
 			console.log("todos.add called with", input, "by user", ctx.user.id);
 
-			const { jars, tags, ...rest } = input;
+			const { title, description } = input;
+			
+			// Extract jars, tags, priority from text
+			const { jars, tags, priority } = await extractAndEnsureMentions(
+				[title, description],
+				ctx.user.id
+			);
 
 			try {
 				const newTodo = await prisma.todo.create({
 					data: {
-						title: rest.title,
-						description: rest.description,
+						title,
+						description,
 						userId: ctx.user.id,
-						priority: rest.priority,
-						// connect/create jars by name for this user
-						...(jars?.length
-							? {
-									jars: {
-										connectOrCreate: jars.map((name) => ({
-											where: {
-												userId_name: {
-													userId: ctx.user.id,
-													name,
-												},
-											},
-											create: {
-												userId: ctx.user.id,
-												name,
-											},
-										})),
-									},
-								}
-							: {}),
-						...(tags?.length
-							? {
-									tags: {
-										connectOrCreate: tags.map((name) => ({
-											where: {
-												userId_name: {
-													userId: ctx.user.id,
-													name,
-												},
-											},
-											create: {
-												userId: ctx.user.id,
-												name,
-											},
-										})),
-									},
-								}
-							: {}),
+						priority: priority ?? input.priority, // Prefer parsed priority, fallback to input? Or just parsed? parsed returns undefined if not found.
+						// connect jars
+						jars: {
+							connect: jars.map((j) => ({ id: j.id })),
+						},
+						// connect tags
+						tags: {
+							connect: tags.map((t) => ({ id: t.id })),
+						},
 					},
 					include: todoBaseInclude,
 				});
@@ -142,53 +88,35 @@ const todosRouter = {
 				.merge(todoUpsertMetaInput),
 		)
 		.mutation(async ({ input, ctx }) => {
-			const { id, jars, tags, ...rest } = input;
-
-			// For jars/tags on update, simplest is:
-			// - if provided, *replace* the set based on the provided names
-			//   (connectOrCreate + set by ids).
-			// If not provided, leave as-is.
+			const { id, title, description, jars, tags, priority, ...rest } = input;
 			const userId = ctx.user.id;
 
-			const newJars = jars?.length
-				? await Promise.all(
-						jars.map((name) =>
-							prisma.jar.upsert({
-								where: {
-									userId_name: {
-										userId,
-										name,
-									},
-								},
-								update: {},
-								create: {
-									userId,
-									name,
-								},
-							}),
-						),
-					)
-				: undefined;
+			// Check if we need to re-parse mentions (if title or description changed)
+			let jarIds: string[] | undefined;
+			let tagIds: string[] | undefined;
+			let parsedPriority: PriorityCode | undefined | null; // null means clear it
 
-			const newTags = tags?.length
-				? await Promise.all(
-						tags.map((name) =>
-							prisma.tag.upsert({
-								where: {
-									userId_name: {
-										userId,
-										name,
-									},
-								},
-								update: {},
-								create: {
-									userId,
-									name,
-								},
-							}),
-						),
-					)
-				: undefined;
+			if (title !== undefined || description !== undefined) {
+				const currentTodo = await prisma.todo.findUnique({
+					where: { id, userId },
+					select: { title: true, description: true },
+				});
+
+				if (currentTodo) {
+					const nextTitle = title ?? currentTodo.title;
+					const nextDescription =
+						description !== undefined ? description : currentTodo.description;
+
+					const { jars, tags, priority } = await extractAndEnsureMentions(
+						[nextTitle, nextDescription],
+						userId,
+					);
+
+					jarIds = jars.map((j) => j.id);
+					tagIds = tags.map((t) => t.id);
+					parsedPriority = priority || null; // If undefined (no priority in text), set to null (clear it)
+				}
+			}
 
 			const updatedTodo = await prisma.todo.update({
 				where: {
@@ -196,18 +124,21 @@ const todosRouter = {
 					userId,
 				},
 				data: {
+					title,
+					description,
 					...rest,
-					...(newJars
+					...(parsedPriority !== undefined ? { priority: parsedPriority ?? "MEDIUM" } : {}), // Update priority if re-parsed (undefined logic handled by conditional check, but wait logic above sets it to null if undefined? logic below handles it)
+					...(jarIds
 						? {
 								jars: {
-									set: newJars.map((j) => ({ id: j.id })),
+									set: jarIds.map((jid) => ({ id: jid })),
 								},
 							}
 						: {}),
-					...(newTags
+					...(tagIds
 						? {
 								tags: {
-									set: newTags.map((t) => ({ id: t.id })),
+									set: tagIds.map((tid) => ({ id: tid })),
 								},
 							}
 						: {}),
@@ -274,17 +205,15 @@ const jarsRouter = {
 
 			// Parse mentions from description and create links
 			if (input.description) {
-				const { jars, tags } = parseMentions(input.description);
-				const { jars: targetJars, tags: targetTags } = await ensureEntitiesExist(
-					ctx.user.id,
-					jars,
-					tags,
+				const { jars, tags } = await extractAndEnsureMentions(
+					[input.description],
+					ctx.user.id
 				);
 
 				// Link to mentioned jars
-				if (targetJars.length > 0) {
+				if (jars.length > 0) {
 					await prisma.jarLink.createMany({
-						data: targetJars.map((target) => ({
+						data: jars.map((target) => ({
 							sourceJarId: jar.id,
 							targetJarId: target.id,
 						})),
@@ -293,9 +222,9 @@ const jarsRouter = {
 				}
 
 				// Link to mentioned tags
-				if (targetTags.length > 0) {
+				if (tags.length > 0) {
 					await prisma.jarTagLink.createMany({
-						data: targetTags.map((target) => ({
+						data: tags.map((target) => ({
 							jarId: jar.id,
 							tagId: target.id,
 						})),
@@ -338,13 +267,14 @@ const jarsRouter = {
 
 				// Create new links from updated description
 				if (description) {
-					const { jars, tags } = parseMentions(description);
-					const { jars: targetJars, tags: targetTags } =
-						await ensureEntitiesExist(ctx.user.id, jars, tags);
+					const { jars, tags } = await extractAndEnsureMentions(
+						[description],
+						ctx.user.id
+					);
 
-					if (targetJars.length > 0) {
+					if (jars.length > 0) {
 						await prisma.jarLink.createMany({
-							data: targetJars.map((target) => ({
+							data: jars.map((target) => ({
 								sourceJarId: jar.id,
 								targetJarId: target.id,
 							})),
@@ -352,9 +282,9 @@ const jarsRouter = {
 						});
 					}
 
-					if (targetTags.length > 0) {
+					if (tags.length > 0) {
 						await prisma.jarTagLink.createMany({
-							data: targetTags.map((target) => ({
+							data: tags.map((target) => ({
 								jarId: jar.id,
 								tagId: target.id,
 							})),
@@ -412,17 +342,15 @@ const tagsRouter = {
 
 			// Parse mentions from description and create links
 			if (input.description) {
-				const { jars, tags } = parseMentions(input.description);
-				const { jars: targetJars, tags: targetTags } = await ensureEntitiesExist(
-					ctx.user.id,
-					jars,
-					tags,
+				const { jars, tags } = await extractAndEnsureMentions(
+					[input.description],
+					ctx.user.id
 				);
 
 				// Link to mentioned jars
-				if (targetJars.length > 0) {
+				if (jars.length > 0) {
 					await prisma.jarTagLink.createMany({
-						data: targetJars.map((target) => ({
+						data: jars.map((target) => ({
 							tagId: tag.id,
 							jarId: target.id,
 						})),
@@ -431,9 +359,9 @@ const tagsRouter = {
 				}
 
 				// Link to mentioned tags
-				if (targetTags.length > 0) {
+				if (tags.length > 0) {
 					await prisma.tagLink.createMany({
-						data: targetTags.map((target) => ({
+						data: tags.map((target) => ({
 							sourceTagId: tag.id,
 							targetTagId: target.id,
 						})),
@@ -476,13 +404,14 @@ const tagsRouter = {
 
 				// Create new links from updated description
 				if (description) {
-					const { jars, tags } = parseMentions(description);
-					const { jars: targetJars, tags: targetTags } =
-						await ensureEntitiesExist(ctx.user.id, jars, tags);
+					const { jars, tags } = await extractAndEnsureMentions(
+						[description],
+						ctx.user.id
+					);
 
-					if (targetJars.length > 0) {
+					if (jars.length > 0) {
 						await prisma.jarTagLink.createMany({
-							data: targetJars.map((target) => ({
+							data: jars.map((target) => ({
 								tagId: tag.id,
 								jarId: target.id,
 							})),
@@ -490,9 +419,9 @@ const tagsRouter = {
 						});
 					}
 
-					if (targetTags.length > 0) {
+					if (tags.length > 0) {
 						await prisma.tagLink.createMany({
-							data: targetTags.map((target) => ({
+							data: tags.map((target) => ({
 								sourceTagId: tag.id,
 								targetTagId: target.id,
 							})),
@@ -536,63 +465,27 @@ const notesRouter = {
 				.merge(todoUpsertMetaInput),
 		)
 		.mutation(async ({ input, ctx }) => {
-			const { title, content, jars: explicitJars, tags: explicitTags } = input;
+			const { title, content } = input;
 
-			// Parse mentions from both title and content
-			const { jars: jarsFromContent, tags: tagsFromContent } =
-				parseMentions(content);
-			const { jars: jarsFromTitle, tags: tagsFromTitle } = parseMentions(
-				title || "",
+			// Extract mentions from title and content
+			const { jars, tags } = await extractAndEnsureMentions(
+				[title, content],
+				ctx.user.id
 			);
-
-			// Merge unique mentions
-			const allJars = Array.from(
-				new Set([...jarsFromContent, ...jarsFromTitle]),
-			);
-			const allTags = Array.from(
-				new Set([...tagsFromContent, ...tagsFromTitle]),
-			);
-
-			// Use explicit jars/tags if provided, otherwise parsed ones?
-			// For Notes, we likely want parsing to drive it, but allow flexibility.
-			// Based on Todos, it respects explicit input (which mentions hook provides).
-			// Let's defer to the input `jars` and `tags` which come from parsed result
-			// passed by the client (since client parses mentions for IDs usually,
-			// but here we are strictly name based in schema implies connectOrCreate).
-
-			// Actually `todoUpsertMetaInput` takes jar/tag NAMES.
-			// So we can just use the input directly if the client sends them.
-			// The client mention hook will provide the list.
-			const jarsToConnect = explicitJars ?? allJars;
-			const tagsToConnect = explicitTags ?? allTags;
 
 			const note = await prisma.note.create({
 				data: {
 					title,
 					content,
 					userId: ctx.user.id,
-					// connect/create jars
-					...(jarsToConnect.length
-						? {
-								jars: {
-									connectOrCreate: jarsToConnect.map((name) => ({
-										where: { userId_name: { userId: ctx.user.id, name } },
-										create: { userId: ctx.user.id, name },
-									})),
-								},
-							}
-						: {}),
-					// connect/create tags
-					...(tagsToConnect.length
-						? {
-								tags: {
-									connectOrCreate: tagsToConnect.map((name) => ({
-										where: { userId_name: { userId: ctx.user.id, name } },
-										create: { userId: ctx.user.id, name },
-									})),
-								},
-							}
-						: {}),
+					// connect jars
+					jars: {
+						connect: jars.map((j) => ({ id: j.id })),
+					},
+					// connect tags
+					tags: {
+						connect: tags.map((t) => ({ id: t.id })),
+					},
 				},
 				include: { jars: true, tags: true },
 			});
@@ -611,53 +504,47 @@ const notesRouter = {
 				.merge(todoUpsertMetaInput),
 		)
 		.mutation(async ({ input, ctx }) => {
-			const { id, title, content, jars, tags } = input;
+			const { id, title, content, jars: _explicitJars, tags: _explicitTags, priority: _p, ...rest } = input;
 			const userId = ctx.user.id;
 
-			// Prepare upserts for jars/tags
-			const newJars = jars?.length
-				? await Promise.all(
-						jars.map((name) =>
-							prisma.jar.upsert({
-								where: { userId_name: { userId, name } },
-								update: {},
-								create: { userId, name },
-							}),
-						),
-					)
-				: undefined;
+			// Check if we need to re-parse (always yes since content is required in input schema? No, content is z.min(1) but in update input object... Input object has content required?
+			// Line 536: content: z.string().min(1). Not optional?
+			// If content is required, we always have it.
+			// But wait, the update input definition uses Zod object directly.
+			// Line 536: content: z.string().min(1)
+			// So content is MANDATORY for update?
+			// Line 609 in original file (Step 131) said: `content: z.string().min(1)`.
+			// So yes, content is mandatory.
+			// Title is optional `title: z.string().optional()`.
+			
+			// So we always have content. We need current title if not provided.
+			
+			let nextTitle = title;
+			if (title === undefined) {
+				const currentNote = await prisma.note.findUnique({
+					where: { id, userId },
+					select: { title: true },
+				});
+				if (!currentNote) throw new Error("Note not found"); // or just let update fail? But we need title for parsing.
+				nextTitle = currentNote.title || "";
+			}
 
-			const newTags = tags?.length
-				? await Promise.all(
-						tags.map((name) =>
-							prisma.tag.upsert({
-								where: { userId_name: { userId, name } },
-								update: {},
-								create: { userId, name },
-							}),
-						),
-					)
-				: undefined;
+			const { jars, tags } = await extractAndEnsureMentions(
+				[nextTitle, content],
+				userId
+			);
 
 			const updatedNote = await prisma.note.update({
 				where: { id, userId },
 				data: {
 					title,
 					content,
-					...(newJars
-						? {
-								jars: {
-									set: newJars.map((j) => ({ id: j.id })),
-								},
-							}
-						: {}),
-					...(newTags
-						? {
-								tags: {
-									set: newTags.map((t) => ({ id: t.id })),
-								},
-							}
-						: {}),
+					jars: {
+						set: jars.map((j) => ({ id: j.id })),
+					},
+					tags: {
+						set: tags.map((t) => ({ id: t.id })),
+					},
 				},
 				include: { jars: true, tags: true },
 			});
