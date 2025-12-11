@@ -20,7 +20,7 @@ export interface DashboardLayoutProps {
   moduleDefinitions: ModuleDefinition[]
 }
 
-const MIN_COLUMN_WIDTH = 500
+const MIN_COLUMN_WIDTH = 475
 
 export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
   const {
