@@ -843,6 +843,92 @@ export const updateNoteAiNotes = updateNoteAiNotesToolDef.server(async (input) =
 })
 
 // =============================================================================
+// ORPHAN/UNUSED ENTITY TOOLS
+// =============================================================================
+
+export const listUnusedTagsToolDef = toolDefinition({
+  name: 'listUnusedTags',
+  description: 'Find tags that are not linked to any todos or notes. Useful for cleanup.',
+  inputSchema: z.object({
+    userId: z.string().uuid(),
+  }),
+  outputSchema: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    todoCount: z.number(),
+    noteCount: z.number(),
+  })),
+})
+
+export const listUnusedTags = listUnusedTagsToolDef.server(async (input) => {
+  const tags = await prisma.tag.findMany({
+    where: {
+      userId: input.userId,
+      todos: { none: {} },
+      notes: { none: {} },
+      // Also check that this tag is not referenced by other tags
+      referencedBy: { none: {} },
+      // And not linked by any jars (via JarTagLink)
+      linkedJars: { none: {} },
+    },
+    include: {
+      _count: {
+        select: { todos: true, notes: true, referencedBy: true, linkedJars: true },
+      },
+    },
+  })
+  return tags.map(t => ({
+    id: t.id,
+    name: t.name,
+    description: t.description,
+    todoCount: t._count.todos,
+    noteCount: t._count.notes,
+  }))
+})
+
+export const listUnusedJarsToolDef = toolDefinition({
+  name: 'listUnusedJars',
+  description: 'Find jars that are not linked to any todos or notes. Useful for cleanup.',
+  inputSchema: z.object({
+    userId: z.string().uuid(),
+  }),
+  outputSchema: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    todoCount: z.number(),
+    noteCount: z.number(),
+  })),
+})
+
+export const listUnusedJars = listUnusedJarsToolDef.server(async (input) => {
+  const jars = await prisma.jar.findMany({
+    where: {
+      userId: input.userId,
+      todos: { none: {} },
+      notes: { none: {} },
+      // Also check that this jar is not referenced by other jars
+      referencedBy: { none: {} },
+      // And not linked by any tags (via JarTagLink)
+      linkedTags: { none: {} },
+    },
+    include: {
+      _count: {
+        select: { todos: true, notes: true, referencedBy: true, linkedTags: true },
+      },
+    },
+  })
+  return jars.map(j => ({
+    id: j.id,
+    name: j.name,
+    description: j.description,
+    todoCount: j._count.todos,
+    noteCount: j._count.notes,
+  }))
+})
+
+// =============================================================================
 // EXPORT ALL TOOLS
 // =============================================================================
 
@@ -862,6 +948,7 @@ export const allToolDefs = [
   updateJarToolDef,
   deleteJarToolDef,
   updateJarAiNotesToolDef,
+  listUnusedJarsToolDef,
   listTagsToolDef,
   searchTagsToolDef,
   getTagsByIdToolDef,
@@ -869,6 +956,7 @@ export const allToolDefs = [
   updateTagToolDef,
   deleteTagToolDef,
   updateTagAiNotesToolDef,
+  listUnusedTagsToolDef,
   listNotesToolDef,
   searchNotesToolDef,
   getNotesByIdToolDef,
@@ -896,6 +984,7 @@ export const allAiTools = [
   updateJar,
   deleteJar,
   updateJarAiNotes,
+  listUnusedJars,
   // Tags
   listTags,
   searchTags,
@@ -904,6 +993,7 @@ export const allAiTools = [
   updateTag,
   deleteTag,
   updateTagAiNotes,
+  listUnusedTags,
   // Notes
   listNotes,
   searchNotes,
@@ -1134,8 +1224,29 @@ export async function executeTool(toolName: string, input: any): Promise<any> {
     }
     
     case 'deleteJar': {
-      await prisma.jar.delete({ where: { id: input.id, userId: input.userId } })
-      return { success: true }
+      // Accept id, jarId, ids, or jarIds - models use different names
+      let ids: string[] = []
+      if (input.id) ids = [input.id]
+      else if (input.jarId) ids = [input.jarId]
+      else if (input.ids) ids = Array.isArray(input.ids) ? input.ids : [input.ids]
+      else if (input.jarIds) ids = Array.isArray(input.jarIds) ? input.jarIds : [input.jarIds]
+      
+      if (ids.length === 0) {
+        console.log('[deleteJar] No IDs found in input:', JSON.stringify(input))
+        return { success: false, error: 'No jar ID provided' }
+      }
+      
+      console.log(`[deleteJar] Deleting ${ids.length} jars:`, ids)
+      let deletedCount = 0
+      for (const jarId of ids) {
+        try {
+          await prisma.jar.delete({ where: { id: jarId, userId: input.userId } })
+          deletedCount++
+        } catch (e: any) {
+          console.log(`[deleteJar] Failed to delete ${jarId}:`, e.message)
+        }
+      }
+      return { success: true, deletedCount }
     }
     
     case 'updateJarAiNotes': {
@@ -1144,6 +1255,28 @@ export async function executeTool(toolName: string, input: any): Promise<any> {
         data: { aiNotes: input.aiNotes },
       })
       return { id: jar.id, aiNotes: jar.aiNotes }
+    }
+    
+    case 'listUnusedJars': {
+      const jars = await prisma.jar.findMany({
+        where: {
+          userId: input.userId,
+          todos: { none: {} },
+          notes: { none: {} },
+          referencedBy: { none: {} },
+          linkedTags: { none: {} },
+        },
+        include: {
+          _count: { select: { todos: true, notes: true, referencedBy: true, linkedTags: true } },
+        },
+      })
+      return jars.map(j => ({
+        id: j.id,
+        name: j.name,
+        description: j.description,
+        todoCount: j._count.todos,
+        noteCount: j._count.notes,
+      }))
     }
     
     // Tags
@@ -1201,8 +1334,29 @@ export async function executeTool(toolName: string, input: any): Promise<any> {
     }
     
     case 'deleteTag': {
-      await prisma.tag.delete({ where: { id: input.id, userId: input.userId } })
-      return { success: true }
+      // Accept id, tagId, ids, or tagIds - models use different names
+      let ids: string[] = []
+      if (input.id) ids = [input.id]
+      else if (input.tagId) ids = [input.tagId]
+      else if (input.ids) ids = Array.isArray(input.ids) ? input.ids : [input.ids]
+      else if (input.tagIds) ids = Array.isArray(input.tagIds) ? input.tagIds : [input.tagIds]
+      
+      if (ids.length === 0) {
+        console.log('[deleteTag] No IDs found in input:', JSON.stringify(input))
+        return { success: false, error: 'No tag ID provided' }
+      }
+      
+      console.log(`[deleteTag] Deleting ${ids.length} tags:`, ids)
+      let deletedCount = 0
+      for (const tagId of ids) {
+        try {
+          await prisma.tag.delete({ where: { id: tagId, userId: input.userId } })
+          deletedCount++
+        } catch (e: any) {
+          console.log(`[deleteTag] Failed to delete ${tagId}:`, e.message)
+        }
+      }
+      return { success: true, deletedCount }
     }
     
     case 'updateTagAiNotes': {
@@ -1211,6 +1365,28 @@ export async function executeTool(toolName: string, input: any): Promise<any> {
         data: { aiNotes: input.aiNotes },
       })
       return { id: tag.id, aiNotes: tag.aiNotes }
+    }
+    
+    case 'listUnusedTags': {
+      const tags = await prisma.tag.findMany({
+        where: {
+          userId: input.userId,
+          todos: { none: {} },
+          notes: { none: {} },
+          referencedBy: { none: {} },
+          linkedJars: { none: {} },
+        },
+        include: {
+          _count: { select: { todos: true, notes: true, referencedBy: true, linkedJars: true } },
+        },
+      })
+      return tags.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        todoCount: t._count.todos,
+        noteCount: t._count.notes,
+      }))
     }
     
     // Notes
@@ -1300,8 +1476,29 @@ export async function executeTool(toolName: string, input: any): Promise<any> {
     }
     
     case 'deleteNote': {
-      await prisma.note.delete({ where: { id: input.id, userId: input.userId } })
-      return { success: true }
+      // Accept id, noteId, ids, or noteIds - models use different names
+      let ids: string[] = []
+      if (input.id) ids = [input.id]
+      else if (input.noteId) ids = [input.noteId]
+      else if (input.ids) ids = Array.isArray(input.ids) ? input.ids : [input.ids]
+      else if (input.noteIds) ids = Array.isArray(input.noteIds) ? input.noteIds : [input.noteIds]
+      
+      if (ids.length === 0) {
+        console.log('[deleteNote] No IDs found in input:', JSON.stringify(input))
+        return { success: false, error: 'No note ID provided' }
+      }
+      
+      console.log(`[deleteNote] Deleting ${ids.length} notes:`, ids)
+      let deletedCount = 0
+      for (const noteId of ids) {
+        try {
+          await prisma.note.delete({ where: { id: noteId, userId: input.userId } })
+          deletedCount++
+        } catch (e: any) {
+          console.log(`[deleteNote] Failed to delete ${noteId}:`, e.message)
+        }
+      }
+      return { success: true, deletedCount }
     }
     
     case 'updateNoteAiNotes': {

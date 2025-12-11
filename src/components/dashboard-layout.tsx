@@ -186,11 +186,11 @@ export function DashboardLayout({ moduleDefinitions }: DashboardLayoutProps) {
         {/* Dashboard Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-teal-400 bg-clip-text text-transparent mb-2">
-            ManyJar Dashboard
+            ManyJars
           </h1>
-          <p className="text-white/60 text-lg">
+          {/* <p className="text-white/60 text-lg">
             Your ADHD-friendly productivity hub
-          </p>
+          </p> */}
         </div>
 
         {/* Masonry Grid Container */}

@@ -60,6 +60,8 @@ AVAILABLE TOOLS:
 - updateTodo(userId, id, ...)
 - deleteTodo(userId, id or ids[]) - accepts single id or array of ids
 - Similar patterns for Jars, Tags, Notes
+- listUnusedTags(userId) - Find tags not linked to any todos or notes (for cleanup)
+- listUnusedJars(userId) - Find jars not linked to any todos or notes (for cleanup)
 
 PARAMETER NAMES:
 - For searchTodos, use "query" for the search text
