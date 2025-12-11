@@ -1,6 +1,7 @@
 // src/lib/module-registry.ts
 
-import { Archive, CheckSquare, Hash, NotebookPen } from "lucide-react";
+import { Archive, Bot, CheckSquare, Hash, NotebookPen } from "lucide-react";
+import { ChatModule } from "@/components/modules/chat-module";
 import { JarsModule } from "@/components/modules/jars-module";
 import { NotesModule } from "@/components/modules/notes-module";
 import { TagsModule } from "@/components/modules/tags-module";
@@ -55,4 +56,16 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
 			height: 2,
 		},
 	},
+	{
+		type: "chat",
+		name: "AI Chat",
+		description: "Chat with AI to manage your data",
+		icon: Bot,
+		component: ChatModule,
+		defaultSize: {
+			width: 1,
+			height: 2,
+		},
+	},
 ];
+

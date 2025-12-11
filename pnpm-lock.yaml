@@ -63,17 +63,20 @@ importers:
         specifier: ^4.0.6
         version: 4.1.17(vite@7.2.6(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@tanstack/ai':
-        specifier: ^0.0.1
-        version: 0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+        specifier: ^0.0.3
+        version: 0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
       '@tanstack/ai-anthropic':
-        specifier: ^0.0.1
-        version: 0.0.1(@tanstack/ai@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(zod@4.1.13)
+        specifier: ^0.0.3
+        version: 0.0.3(@tanstack/ai@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(zod@4.1.13)
       '@tanstack/ai-client':
-        specifier: ^0.0.1
-        version: 0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+        specifier: ^0.0.3
+        version: 0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+      '@tanstack/ai-ollama':
+        specifier: ^0.0.3
+        version: 0.0.3(@tanstack/ai@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))
       '@tanstack/ai-react':
-        specifier: ^0.0.1
-        version: 0.0.1(@tanstack/ai-client@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@tanstack/ai@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@types/react@19.2.7)(react@19.2.1)
+        specifier: ^0.0.3
+        version: 0.0.3(@tanstack/ai-client@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@tanstack/ai@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@types/react@19.2.7)(react@19.2.1)
       '@tanstack/db':
         specifier: ^0.5.11
         version: 0.5.11(typescript@5.9.3)
@@ -197,6 +200,9 @@ importers:
       zod:
         specifier: ^4.1.11
         version: 4.1.13
+      zod-to-json-schema:
+        specifier: ^3.25.0
+        version: 3.25.0(zod@4.1.13)
     devDependencies:
       '@biomejs/biome':
         specifier: 2.2.4
@@ -2358,24 +2364,29 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7
 
-  '@tanstack/ai-anthropic@0.0.1':
-    resolution: {integrity: sha512-xfeH0rvSSSMcSXKjSJvRnuIRKEYPgJyMHXqzkJS2gGitNUw+06+vSaP6SsLVvwy4BlUVEP5OXQ7prLxOOWmQUQ==}
+  '@tanstack/ai-anthropic@0.0.3':
+    resolution: {integrity: sha512-KMFiWdk7ijZ4/PAOPiYkhCJG5iijgsnIuoKAdPeSOcPvqMWzjSpef+WnmzC7RcHNWHOQ8SE/qroTGSpp6vIAfw==}
     peerDependencies:
-      '@tanstack/ai': 0.0.1
+      '@tanstack/ai': 0.0.3
 
-  '@tanstack/ai-client@0.0.1':
-    resolution: {integrity: sha512-nEwHZtUu/HmlgMG9tAHtqp3glA3vuiMgw68kgbsxgViIeNyMmNcEQb3n72GXPhS9bK7o5cbl+ElddNIwbyumAA==}
+  '@tanstack/ai-client@0.0.3':
+    resolution: {integrity: sha512-5XIHhRJ2pWeJKfMpeInI46Ytavq78/E/5gllcYMaLJ24aiPXHbxNeO3akiX7kmnwuL6OIkX99Le/MxZBZvdFhg==}
 
-  '@tanstack/ai-react@0.0.1':
-    resolution: {integrity: sha512-5k/IRUzZlZuNtbjtKD8mDYUgrw4a5GQkoH6roMLHP9eAsddUIZxyRtRLfg8Ep3j8gPxWoiLsXQeCmQJtiaH3Vg==}
+  '@tanstack/ai-ollama@0.0.3':
+    resolution: {integrity: sha512-s9Lcuru6plf3X9X/pCkWW0grs5g1PjbFwTlMlCyFMXbbmqBFSYAaex85V4XkcCCi2pWjIbgVyklfxI9NsHFy1g==}
     peerDependencies:
-      '@tanstack/ai': 0.0.1
-      '@tanstack/ai-client': 0.0.1
+      '@tanstack/ai': 0.0.3
+
+  '@tanstack/ai-react@0.0.3':
+    resolution: {integrity: sha512-C65+F4k0S9Z8Ot8+zhIn5XMxZABejEjbU+Ap99TtJA3C31PlnJry18ny/f82FOZl80G2P5xriehMNKsfcxQM9w==}
+    peerDependencies:
+      '@tanstack/ai': 0.0.3
+      '@tanstack/ai-client': 0.0.3
       '@types/react': '>=18.0.0'
       react: '>=18.0.0'
 
-  '@tanstack/ai@0.0.1':
-    resolution: {integrity: sha512-cRDITa/PRgGWknwv6Vg0RNV3OKKVkwWCk8QVlGHyHPWWnRvaG3pNglOgsCC5fd0kgZraqnCVNPg+8CtWOce/mQ==}
+  '@tanstack/ai@0.0.3':
+    resolution: {integrity: sha512-zwSl0obT/fkUZocI22xClGNg66yWiRw3d3BKz7F5/V8E+JWFZk2Gh4P7V9wrr0uUEjsZlt8u7qNDgBzwU9uu9g==}
     engines: {node: '>=18'}
     peerDependencies:
       '@alcyone-labs/zod-to-json-schema': ^4.0.0
@@ -2415,6 +2426,10 @@ packages:
 
   '@tanstack/devtools-event-client@0.3.5':
     resolution: {integrity: sha512-RL1f5ZlfZMpghrCIdzl6mLOFLTuhqmPNblZgBaeKfdtk5rfbjykurv+VfYydOFXj0vxVIoA2d/zT7xfD7Ph8fw==}
+    engines: {node: '>=18'}
+
+  '@tanstack/devtools-event-client@0.4.0':
+    resolution: {integrity: sha512-RPfGuk2bDZgcu9bAJodvO2lnZeHuz4/71HjZ0bGb/SPg8+lyTA+RLSKQvo7fSmPSi8/vcH3aKQ8EM9ywf1olaw==}
     engines: {node: '>=18'}
 
   '@tanstack/devtools-ui@0.4.4':
@@ -4891,6 +4906,9 @@ packages:
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
 
+  ollama@0.6.3:
+    resolution: {integrity: sha512-KEWEhIqE5wtfzEIZbDCLH51VFZ6Z3ZSa6sIOg/E/tBV8S51flyqBOXi+bRxlOYKDf8i327zG9eSTb8IJxvm3Zg==}
+
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
     engines: {node: '>= 0.8'}
@@ -5403,6 +5421,9 @@ packages:
 
   rou3@0.7.10:
     resolution: {integrity: sha512-aoFj6f7MJZ5muJ+Of79nrhs9N3oLGqi2VEMe94Zbkjb6Wupha46EuoYgpWSOZlXww3bbd8ojgXTAA2mzimX5Ww==}
+
+  rou3@0.7.11:
+    resolution: {integrity: sha512-ELguG3ENDw5NKNmWHO3OGEjcgdxkCNvnMR22gKHEgRXuwiriap5RIYdummOaOiqUNcC5yU5txGCHWNm7KlHuAA==}
 
   roughjs@4.6.6:
     resolution: {integrity: sha512-ZUz/69+SYpFN/g/lUlo2FXcIjRkSu3nDarreVdGGndHEBJ6cXPdKguS8JGxwj5HA5xIbVKSmLgr5b3AWxtRfvQ==}
@@ -6106,6 +6127,9 @@ packages:
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+
+  whatwg-fetch@3.6.20:
+    resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
 
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
@@ -7987,31 +8011,37 @@ snapshots:
       tailwindcss: 4.1.17
       vite: 7.2.6(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
-  '@tanstack/ai-anthropic@0.0.1(@tanstack/ai@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(zod@4.1.13)':
+  '@tanstack/ai-anthropic@0.0.3(@tanstack/ai@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(zod@4.1.13)':
     dependencies:
       '@anthropic-ai/sdk': 0.71.2(zod@4.1.13)
-      '@tanstack/ai': 0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+      '@tanstack/ai': 0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
     transitivePeerDependencies:
       - zod
 
-  '@tanstack/ai-client@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)':
+  '@tanstack/ai-client@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)':
     dependencies:
-      '@tanstack/ai': 0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+      '@tanstack/ai': 0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
     transitivePeerDependencies:
       - '@alcyone-labs/zod-to-json-schema'
       - zod
 
-  '@tanstack/ai-react@0.0.1(@tanstack/ai-client@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@tanstack/ai@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@types/react@19.2.7)(react@19.2.1)':
+  '@tanstack/ai-ollama@0.0.3(@tanstack/ai@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))':
     dependencies:
-      '@tanstack/ai': 0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
-      '@tanstack/ai-client': 0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+      '@tanstack/ai': 0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+      ollama: 0.6.3
+      zod: 4.1.13
+
+  '@tanstack/ai-react@0.0.3(@tanstack/ai-client@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@tanstack/ai@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13))(@types/react@19.2.7)(react@19.2.1)':
+    dependencies:
+      '@tanstack/ai': 0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
+      '@tanstack/ai-client': 0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)
       '@types/react': 19.2.7
       react: 19.2.1
 
-  '@tanstack/ai@0.0.1(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)':
+  '@tanstack/ai@0.0.3(@alcyone-labs/zod-to-json-schema@4.0.10(zod@4.1.13))(zod@4.1.13)':
     dependencies:
       '@alcyone-labs/zod-to-json-schema': 4.0.10(zod@4.1.13)
-      '@tanstack/devtools-event-client': 0.3.5
+      '@tanstack/devtools-event-client': 0.4.0
       partial-json: 0.1.7
       zod: 4.1.13
 
@@ -8057,6 +8087,8 @@ snapshots:
       - utf-8-validate
 
   '@tanstack/devtools-event-client@0.3.5': {}
+
+  '@tanstack/devtools-event-client@0.4.0': {}
 
   '@tanstack/devtools-ui@0.4.4(csstype@3.2.3)(solid-js@1.9.10)':
     dependencies:
@@ -10057,7 +10089,7 @@ snapshots:
     dependencies:
       cookie-es: 2.0.0
       fetchdts: 0.1.7
-      rou3: 0.7.10
+      rou3: 0.7.11
       srvx: 0.8.16
     optionalDependencies:
       crossws: 0.4.1(srvx@0.9.7)
@@ -11145,6 +11177,10 @@ snapshots:
 
   ohash@2.0.11: {}
 
+  ollama@0.6.3:
+    dependencies:
+      whatwg-fetch: 3.6.20
+
   on-finished@2.4.1:
     dependencies:
       ee-first: 1.1.1
@@ -11815,6 +11851,8 @@ snapshots:
 
   rou3@0.7.10: {}
 
+  rou3@0.7.11: {}
+
   roughjs@4.6.6:
     dependencies:
       hachure-fill: 0.5.2
@@ -12480,6 +12518,8 @@ snapshots:
   whatwg-encoding@3.1.1:
     dependencies:
       iconv-lite: 0.6.3
+
+  whatwg-fetch@3.6.20: {}
 
   whatwg-mimetype@4.0.0: {}
 
