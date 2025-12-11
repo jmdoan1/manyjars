@@ -221,6 +221,23 @@ export const NovelEditor = forwardRef<NovelEditorHandle, NovelEditorProps>(funct
           return true;
         }
       }
+      
+      // Handle Tab as Enter for slash command selection
+      if (event.key === 'Tab') {
+        const commandRef = document.querySelector("#slash-command");
+        if (commandRef) {
+          event.preventDefault();
+          commandRef.dispatchEvent(
+            new KeyboardEvent("keydown", {
+              key: "Enter",
+              cancelable: true,
+              bubbles: true,
+            })
+          );
+          return true;
+        }
+      }
+      
       // Then handle slash command navigation
       return handleCommandNavigation(event);
     },
