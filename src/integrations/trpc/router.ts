@@ -5,8 +5,23 @@ import { prisma } from "@/db";
 import { validateJarTagName, type PriorityCode } from "@/hooks/use-mentions";
 import { extractAndEnsureMentions } from "./mentions-helper";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "./init";
-import { Priority, type Prisma } from "../../generated/prisma/client";
+import { Prisma, Priority } from "../../generated/prisma/client";
 import { getPgNotifyListener, type TableChangePayload } from "@/integrations/pg-notify-listener";
+
+/**
+ * Parses a date string to a Date object.
+ * For date-only strings (YYYY-MM-DD format), treats them as local midnight
+ * to avoid timezone-related off-by-one-day issues.
+ */
+function parseDateString(dateStr: string): Date {
+	// Check if it's a date-only string (YYYY-MM-DD format)
+	if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+		// Parse as local date by adding time component
+		return new Date(dateStr + 'T00:00:00');
+	}
+	// For ISO strings or other formats, use standard parsing
+	return new Date(dateStr);
+}
 
 // --- Generic Schemas ---
 
@@ -455,7 +470,7 @@ const todosRouter = {
 						description,
 						userId: ctx.user.id,
 						priority: priority ?? input.priority,
-						dueDate: dueDate ? new Date(dueDate) : undefined,
+						dueDate: dueDate ? parseDateString(dueDate) : undefined,
 						// connect jars
 						jars: {
 							connect: jars.map((j) => ({ id: j.id })),
@@ -528,7 +543,9 @@ const todosRouter = {
 					title,
 					description,
 					...rest,
-					...(parsedPriority !== undefined ? { priority: parsedPriority ?? "MEDIUM" } : {}), // Update priority if re-parsed (undefined logic handled by conditional check, but wait logic above sets it to null if undefined? logic below handles it)
+					// Handle dueDate update
+					...(dueDate !== undefined ? { dueDate: dueDate ? parseDateString(dueDate) : null } : {}),
+					...(parsedPriority !== undefined ? { priority: parsedPriority ?? "MEDIUM" } : {}), // Update priority if re-parsed
 					...(jarIds
 						? {
 								jars: {
