@@ -1,15 +1,26 @@
 // src/components/modules/chat-module.tsx
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
-import { Send, Bot, User, Loader2, Trash2 } from 'lucide-react'
+import { Send, Bot, User, Loader2, Trash2, Wrench } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 
-import { useChat } from '@tanstack/ai-react'
-import type { UIMessage } from '@tanstack/ai-react'
 import type { ModuleProps } from '@/types/dashboard-types'
 
-function Messages({ messages, isLoading }: { messages: Array<UIMessage>; isLoading: boolean }) {
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  toolCalls?: Array<{
+    id: string
+    name: string
+    args: any
+    result?: any
+    pending?: boolean
+  }>
+}
+
+function Messages({ messages, isLoading }: { messages: Array<ChatMessage>; isLoading: boolean }) {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -32,53 +43,51 @@ function Messages({ messages, isLoading }: { messages: Array<UIMessage>; isLoadi
 
   return (
     <div ref={messagesContainerRef} className="flex-1 overflow-y-auto max-h-[400px]">
-      {messages.map(({ id, role, parts }) => (
+      {messages.map((message) => (
         <div
-          key={id}
+          key={message.id}
           className={`py-2 ${
-            role === 'assistant'
+            message.role === 'assistant'
               ? 'bg-purple-500/5'
               : 'bg-transparent'
           }`}
         >
-          {parts.map((part, index) => {
-            if (part.type === 'text' && part.content) {
-              return (
-                <div key={index} className="flex items-start gap-2 px-3">
-                  {role === 'assistant' ? (
-                    <div className="w-5 h-5 rounded bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0 mt-0.5">
-                      <Bot className="w-3 h-3" />
-                    </div>
-                  ) : (
-                    <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0 mt-0.5">
-                      <User className="w-3 h-3" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0 text-white prose prose-sm prose-invert max-w-none text-sm">
-                    <Streamdown>{part.content}</Streamdown>
-                  </div>
+          <div className="flex items-start gap-2 px-3">
+            {message.role === 'assistant' ? (
+              <div className="w-5 h-5 rounded bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0 mt-0.5">
+                <Bot className="w-3 h-3" />
+              </div>
+            ) : (
+              <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0 mt-0.5">
+                <User className="w-3 h-3" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              {message.content && (
+                <div className="text-white prose prose-sm prose-invert max-w-none text-sm">
+                  <Streamdown>{message.content}</Streamdown>
                 </div>
-              )
-            }
-            if (part.type === 'tool-call') {
-              return (
-                <div key={part.id} className="px-3 py-0.5 ml-7">
-                  <div className="text-[10px] text-white/40 flex items-center gap-1">
-                    {part.state === 'input-complete' || part.state === 'awaiting-input' ? (
-                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                    ) : (
-                      <span className="text-green-400">✓</span>
-                    )}
-                    <span>{part.name}</span>
-                  </div>
+              )}
+              {message.toolCalls && message.toolCalls.length > 0 && (
+                <div className="mt-1 space-y-0.5">
+                  {message.toolCalls.map((tc) => (
+                    <div key={tc.id} className="text-[10px] text-white/40 flex items-center gap-1">
+                      {tc.pending ? (
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                      ) : (
+                        <span className="text-green-400">✓</span>
+                      )}
+                      <Wrench className="w-2.5 h-2.5" />
+                      <span>{tc.name}</span>
+                    </div>
+                  ))}
                 </div>
-              )
-            }
-            return null
-          })}
+              )}
+            </div>
+          </div>
         </div>
       ))}
-      {isLoading && messages.length > 0 && !messages[messages.length - 1]?.parts?.some(p => p.type === 'text' && p.content) && (
+      {isLoading && messages.length > 0 && !messages[messages.length - 1]?.content && (
         <div className="py-2 px-3 flex items-center gap-2 text-white/40 text-xs">
           <Loader2 className="w-3 h-3 animate-spin" />
           <span>Thinking...</span>
@@ -91,63 +100,158 @@ function Messages({ messages, isLoading }: { messages: Array<UIMessage>; isLoadi
 export function ChatModule(props: ModuleProps) {
   const { user } = useUser()
   const [input, setInput] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
   
   // Get model from config or use default
   const model = (props.config as any)?.model || 'llama3.1:8b'
   const userId = user?.id
 
-  // Create a custom connection that injects userId and model
-  const connection = useMemo(() => ({
-    connect: async function* (messages: any[], _data?: Record<string, any>, abortSignal?: AbortSignal) {
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || !userId || isLoading) return
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: text,
+    }
+    
+    const assistantMessage: ChatMessage = {
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: '',
+      toolCalls: [],
+    }
+
+    setMessages(prev => [...prev, userMessage, assistantMessage])
+    setIsLoading(true)
+
+    // Prepare messages for API (just role and content)
+    const apiMessages = [...messages, userMessage].map(m => ({
+      role: m.role,
+      content: m.content,
+    }))
+
+    try {
+      abortControllerRef.current = new AbortController()
+      
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages,
+          messages: apiMessages,
           userId,
           model,
         }),
-        signal: abortSignal,
+        signal: abortControllerRef.current.signal,
       })
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
-      
+
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No response body')
-      
+
       const decoder = new TextDecoder()
       let buffer = ''
-      
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        
+
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
-        
+
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6)
-            if (data === '[DONE]') return
+            if (data === '[DONE]') continue
+            
             try {
-              yield JSON.parse(data)
+              const parsed = JSON.parse(data)
+              
+              if (parsed.type === 'text-delta' && parsed.textDelta) {
+                // Append text to assistant message
+                setMessages(prev => {
+                  const updated = [...prev]
+                  const lastMsg = updated[updated.length - 1]
+                  if (lastMsg && lastMsg.role === 'assistant') {
+                    lastMsg.content += parsed.textDelta
+                  }
+                  return updated
+                })
+              } else if (parsed.type === 'tool-call') {
+                // Add tool call to assistant message
+                setMessages(prev => {
+                  const updated = [...prev]
+                  const lastMsg = updated[updated.length - 1]
+                  if (lastMsg && lastMsg.role === 'assistant') {
+                    if (!lastMsg.toolCalls) lastMsg.toolCalls = []
+                    lastMsg.toolCalls.push({
+                      id: parsed.toolCallId,
+                      name: parsed.toolName,
+                      args: parsed.args,
+                      pending: true,
+                    })
+                  }
+                  return updated
+                })
+              } else if (parsed.type === 'tool-result') {
+                // Mark tool call as complete
+                setMessages(prev => {
+                  const updated = [...prev]
+                  const lastMsg = updated[updated.length - 1]
+                  if (lastMsg && lastMsg.role === 'assistant' && lastMsg.toolCalls) {
+                    const tc = lastMsg.toolCalls.find(t => t.id === parsed.toolCallId)
+                    if (tc) {
+                      tc.pending = false
+                      tc.result = parsed.result
+                    }
+                  }
+                  return updated
+                })
+              } else if (parsed.type === 'error') {
+                // Handle error
+                setMessages(prev => {
+                  const updated = [...prev]
+                  const lastMsg = updated[updated.length - 1]
+                  if (lastMsg && lastMsg.role === 'assistant') {
+                    lastMsg.content = `Error: ${parsed.error?.message || 'Unknown error'}`
+                  }
+                  return updated
+                })
+              }
             } catch {
               // Skip invalid JSON
             }
           }
         }
       }
-    },
-  }), [userId, model])
-
-  const { messages, sendMessage, isLoading, setMessages } = useChat({
-    connection,
-  })
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        setMessages(prev => {
+          const updated = [...prev]
+          const lastMsg = updated[updated.length - 1]
+          if (lastMsg && lastMsg.role === 'assistant') {
+            lastMsg.content = `Error: ${error.message}`
+          }
+          return updated
+        })
+      }
+    } finally {
+      setIsLoading(false)
+      abortControllerRef.current = null
+    }
+  }
 
   const clearChat = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
     setMessages([])
   }
 

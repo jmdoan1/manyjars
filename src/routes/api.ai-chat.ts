@@ -15,7 +15,7 @@ function getCurrentDateString(): string {
 // Convert our tool definitions to Ollama's tool format
 function convertToolsToOllamaFormat() {
   return allToolDefs.map(toolDef => {
-    const schema = toolDef.inputSchema ? zodToJsonSchema(toolDef.inputSchema) : { type: 'object', properties: {} }
+    const schema = toolDef.inputSchema ? zodToJsonSchema(toolDef.inputSchema as any) : { type: 'object', properties: {} }
     // Remove $schema property that zod-to-json-schema adds
     if ('$schema' in schema) delete (schema as any).$schema
     
@@ -31,24 +31,34 @@ function convertToolsToOllamaFormat() {
 }
 
 // System prompt explaining available tools and capabilities
-const SYSTEM_PROMPT = `You are a helpful AI assistant for a personal productivity dashboard called ManyJar.
+const SYSTEM_PROMPT = `You are a helpful AI assistant for ManyJar, a productivity dashboard.
 
 CURRENT DATE: {{CURRENT_DATE}}
 
-You have access to tools to manage the user's:
-- **Todos**: Tasks with titles, descriptions, priorities, due dates, and associations with jars and tags
-- **Jars**: Containers/categories for organizing todos and notes (like folders or projects)
-- **Tags**: Labels for categorizing todos and notes (like hashtags)
-- **Notes**: Rich text notes that can be associated with jars and tags
+CRITICAL: YOU MUST USE TOOLS. DO NOT EXPLAIN WHAT YOU WOULD DO - JUST DO IT.
+- DO NOT write JSON examples of tool calls
+- DO NOT say "I would call..." or "I need to call..."
+- DO NOT describe your plan before acting
+- JUST CALL THE TOOL DIRECTLY
 
-IMPORTANT RULES:
-1. Every tool requires a "userId" parameter. You MUST use the userId provided in your context.
-2. When creating jars or tags, names must be alphanumeric with hyphens/underscores only (e.g., "work-projects", "personal_goals").
-3. Use the list tools to get data, search tools for fuzzy matching.
-4. Priorities for todos are: VERY_LOW, LOW, MEDIUM, HIGH, VERY_HIGH
-5. When asked about due dates, use the listTodos tool and filter/check dueDates in your response.
+AVAILABLE TOOLS:
+- listTodos, searchTodos, getTodosById, createTodo, updateTodo, deleteTodo
+- listJars, searchJars, getJarsById, createJar, updateJar, deleteJar  
+- listTags, searchTags, getTagsById, createTag, updateTag, deleteTag
+- listNotes, searchNotes, getNotesById, createNote, updateNote, deleteNote
 
-Be concise but helpful. Format responses nicely when listing multiple items.`
+RULES:
+1. Every tool requires "userId" - use the one provided in context.
+2. When user asks to delete items: search first, then delete each one.
+3. When user asks about their data: call the tool, get results, present nicely.
+4. DO NOT ask for confirmation before calling read-only tools (list/search/get).
+5. For destructive actions (delete/update): you may confirm first, OR just do it if user was explicit.
+
+BEHAVIOR:
+- Be action-oriented. Call tools immediately.
+- After getting results, summarize them nicely for the user.
+- If deleting multiple items, call deleteTodo for EACH item ID.
+- Cross-reference todos with their jars/tags for context.`
 
 export const Route = createFileRoute('/api/ai-chat')({
   // @ts-expect-error - TanStack Start server handlers are not fully typed yet
@@ -114,7 +124,7 @@ export const Route = createFileRoute('/api/ai-chat')({
             async start(controller) {
               try {
                 let iterationCount = 0
-                const maxIterations = 10
+                const maxIterations = 5
 
                 while (iterationCount < maxIterations) {
                   iterationCount++
@@ -144,6 +154,10 @@ export const Route = createFileRoute('/api/ai-chat')({
 
                   const data = await response.json()
                   const assistantMessage = data.message
+
+                  // Debug: log the full response
+                  console.log('[AI Chat] Ollama response:', JSON.stringify(data, null, 2).slice(0, 1000))
+                  console.log('[AI Chat] Has tool_calls?', !!assistantMessage?.tool_calls, assistantMessage?.tool_calls?.length || 0)
 
                   // Stream any text content
                   if (assistantMessage?.content) {
@@ -204,11 +218,17 @@ export const Route = createFileRoute('/api/ai-chat')({
                     }
 
                     // Continue the loop to get the model's response to tool results
+                    console.log('[AI Chat] Continuing loop for tool response...')
                     continue
                   }
 
                   // No tool calls, we're done
+                  console.log('[AI Chat] No more tool calls, ending loop')
                   break
+                }
+
+                if (iterationCount >= maxIterations) {
+                  console.log('[AI Chat] Max iterations reached, forcing end')
                 }
 
                 controller.enqueue(encoder.encode('data: [DONE]\n\n'))
