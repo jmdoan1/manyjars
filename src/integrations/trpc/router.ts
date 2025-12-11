@@ -1,10 +1,12 @@
 import type { TRPCRouterRecord } from "@trpc/server";
+import { observable } from "@trpc/server/observable";
 import { z } from "zod";
 import { prisma } from "@/db";
 import { validateJarTagName, type PriorityCode } from "@/hooks/use-mentions";
 import { extractAndEnsureMentions } from "./mentions-helper";
-import { createTRPCRouter, protectedProcedure } from "./init";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "./init";
 import { Priority, type Prisma } from "../../generated/prisma/client";
+import { getPgNotifyListener, type TableChangePayload } from "@/integrations/pg-notify-listener";
 
 // --- Generic Schemas ---
 
@@ -1194,11 +1196,91 @@ const notesRouter = {
 		}),
 } satisfies TRPCRouterRecord;
 
+// --- Subscriptions Router ---
+
+const subscriptionsRouter = {
+	/**
+	 * Subscribe to table changes for specific tables.
+	 * Emits events when PostgreSQL NOTIFY triggers fire for matching tables.
+	 * Note: Uses publicProcedure because WebSocket doesn't have Clerk auth context.
+	 * The clerkUserId is passed from the client and mapped to DB userId for filtering.
+	 */
+	onTableChange: publicProcedure
+		.input(
+			z.object({
+				tables: z.array(z.enum(["Todo", "Jar", "Tag", "Note"])),
+				clerkUserId: z.string(), // Client passes their Clerk userId
+			}),
+		)
+		.subscription(async function* ({ input }) {
+			console.log("[subscriptions] Client subscribing with clerkUserId:", input.clerkUserId);
+			
+			// Look up the DB userId from clerkUserId
+			const dbUser = await prisma.user.findUnique({
+				where: { clerkUserId: input.clerkUserId },
+				select: { id: true },
+			});
+			
+			if (!dbUser) {
+				console.warn("[subscriptions] User not found for clerkUserId:", input.clerkUserId);
+				return;
+			}
+			
+			const dbUserId = dbUser.id;
+			console.log("[subscriptions] Mapped to DB userId:", dbUserId, "for tables:", input.tables);
+
+			const listener = getPgNotifyListener();
+			if (!listener) {
+				console.warn("[subscriptions] pg-notify listener not initialized");
+				return;
+			}
+
+			// Create a promise-based event stream
+			const queue: TableChangePayload[] = [];
+			let resolveNext: ((value: IteratorResult<TableChangePayload>) => void) | null = null;
+
+			const handler = (payload: TableChangePayload) => {
+				console.log("[subscriptions] Received change:", payload.table, "for user:", payload.userId);
+				// Only emit if the change is for this user and a subscribed table
+				if (
+					payload.userId === dbUserId &&
+					input.tables.includes(payload.table as any)
+				) {
+					console.log("[subscriptions] Emitting to client");
+					if (resolveNext) {
+						resolveNext({ value: payload, done: false });
+						resolveNext = null;
+					} else {
+						queue.push(payload);
+					}
+				}
+			};
+
+			listener.on("change", handler);
+
+			try {
+				while (true) {
+					if (queue.length > 0) {
+						yield queue.shift()!;
+					} else {
+						yield await new Promise<TableChangePayload>((resolve) => {
+							resolveNext = (result) => resolve(result.value);
+						});
+					}
+				}
+			} finally {
+				console.log("[subscriptions] Client unsubscribed");
+				listener.off("change", handler);
+			}
+		}),
+} satisfies TRPCRouterRecord;
+
 export const trpcRouter = createTRPCRouter({
 	todos: todosRouter,
 	jars: jarsRouter,
 	tags: tagsRouter,
 	notes: notesRouter,
+	subscriptions: subscriptionsRouter,
 });
 
 export type TRPCRouter = typeof trpcRouter;

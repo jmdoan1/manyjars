@@ -1,18 +1,19 @@
 import { createClerkClient } from '@clerk/backend'
 import { prisma } from '@/db'
 
-if (!process.env.CLERK_SECRET_KEY) {
-  throw new Error('Missing CLERK_SECRET_KEY in environment')
-}
+// Clerk client - may be null if environment variables aren't set (e.g., WebSocket server context)
+let clerk: ReturnType<typeof createClerkClient> | null = null
 
-if (!process.env.VITE_CLERK_PUBLISHABLE_KEY) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in environment')
+try {
+  if (process.env.CLERK_SECRET_KEY && process.env.VITE_CLERK_PUBLISHABLE_KEY) {
+    clerk = createClerkClient({
+      secretKey: process.env.CLERK_SECRET_KEY,
+      publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY,
+    })
+  }
+} catch (e) {
+  console.warn('[trpc-context] Clerk client not initialized:', e)
 }
-
-const clerk = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY!,
-  publishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY!,
-})
 
 type DbUser = Awaited<ReturnType<typeof prisma.user.findUnique>> | null
 
@@ -26,44 +27,54 @@ export async function createTRPCContext(opts: {
 }): Promise<TRPCContext> {
   const { req } = opts
 
-  // authenticate the actual Request object
-  const requestState = await clerk.authenticateRequest(req)
-  const auth = requestState.toAuth()
-  const clerkUserId = auth?.userId ?? null
-
-  if (!clerkUserId) {
-    // unauthenticated
+  // If Clerk isn't available (e.g., WebSocket context), return unauthenticated
+  if (!clerk) {
     return { clerkUserId: null, user: null }
   }
 
-  let user = await prisma.user.findUnique({
-    where: { clerkUserId },
-  })
+  try {
+    // authenticate the actual Request object
+    const requestState = await clerk.authenticateRequest(req)
+    const auth = requestState.toAuth()
+    const clerkUserId = auth?.userId ?? null
 
-  if (!user) {
-    const clerkUser = await clerk.users.getUser(clerkUserId)
+    if (!clerkUserId) {
+      // unauthenticated
+      return { clerkUserId: null, user: null }
+    }
 
-    const email =
-      clerkUser.primaryEmailAddress?.emailAddress ??
-      clerkUser.emailAddresses[0]?.emailAddress ??
-      ''
-
-    const displayName =
-      clerkUser.username ??
-      [clerkUser.firstName, clerkUser.lastName]
-        .filter(Boolean)
-        .join(' ')
-        .trim() ??
-      email
-
-    user = await prisma.user.create({
-      data: {
-        clerkUserId,
-        email,
-        displayName,
-      },
+    let user = await prisma.user.findUnique({
+      where: { clerkUserId },
     })
-  }
 
-  return { clerkUserId, user }
+    if (!user) {
+      const clerkUser = await clerk.users.getUser(clerkUserId)
+
+      const email =
+        clerkUser.primaryEmailAddress?.emailAddress ??
+        clerkUser.emailAddresses[0]?.emailAddress ??
+        ''
+
+      const displayName =
+        clerkUser.username ??
+        [clerkUser.firstName, clerkUser.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim() ??
+        email
+
+      user = await prisma.user.create({
+        data: {
+          clerkUserId,
+          email,
+          displayName,
+        },
+      })
+    }
+
+    return { clerkUserId, user }
+  } catch (e) {
+    console.warn('[trpc-context] Auth failed:', e)
+    return { clerkUserId: null, user: null }
+  }
 }
