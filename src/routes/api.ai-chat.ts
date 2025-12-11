@@ -7,15 +7,27 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 // Get OLLAMA_URL from process.env (server-side) with fallback
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'
 
+// Default model for chat - can be overridden via request
+const DEFAULT_MODEL = 'qwen2.5:7b-instruct'
+
 // Get current date as ISO string for the system prompt
 function getCurrentDateString(): string {
   return new Date().toISOString().split('T')[0]
 }
 
+// Helper to convert Zod schema to JSON Schema
+// TanStack AI uses a different Zod internal build, so we need this wrapper
+function schemaToJsonSchema(schema: unknown): Record<string, unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return zodToJsonSchema(schema as any)
+}
+
 // Convert our tool definitions to Ollama's tool format
 function convertToolsToOllamaFormat() {
   return allToolDefs.map(toolDef => {
-    const schema = toolDef.inputSchema ? zodToJsonSchema(toolDef.inputSchema as any) : { type: 'object', properties: {} }
+    const schema = toolDef.inputSchema 
+      ? schemaToJsonSchema(toolDef.inputSchema) 
+      : { type: 'object', properties: {} }
     // Remove $schema property that zod-to-json-schema adds
     if ('$schema' in schema) delete (schema as any).$schema
     
@@ -30,35 +42,48 @@ function convertToolsToOllamaFormat() {
   })
 }
 
-// System prompt explaining available tools and capabilities
+// System prompt with clear tool calling instructions
 const SYSTEM_PROMPT = `You are a helpful AI assistant for ManyJar, a productivity dashboard.
 
 CURRENT DATE: {{CURRENT_DATE}}
 
-CRITICAL: YOU MUST USE TOOLS. DO NOT EXPLAIN WHAT YOU WOULD DO - JUST DO IT.
+CRITICAL: USE TOOLS. DO NOT DESCRIBE OR EXPLAIN - JUST CALL THEM.
 - DO NOT write JSON examples of tool calls
 - DO NOT say "I would call..." or "I need to call..."
-- DO NOT describe your plan before acting
 - JUST CALL THE TOOL DIRECTLY
 
 AVAILABLE TOOLS:
-- listTodos, searchTodos, getTodosById, createTodo, updateTodo, deleteTodo
-- listJars, searchJars, getJarsById, createJar, updateJar, deleteJar  
-- listTags, searchTags, getTagsById, createTag, updateTag, deleteTag
-- listNotes, searchNotes, getNotesById, createNote, updateNote, deleteNote
+- listTodos(userId, isCompleted?, textSearch?, jarIds?, tagIds?, limit?)
+- searchTodos(userId, query, limit?) - use "query" parameter for search text
+- getTodosById(userId, ids[])
+- createTodo(userId, title, description?, priority?, dueDate?, jarIds?, tagIds?)
+- updateTodo(userId, id, ...)
+- deleteTodo(userId, id or ids[]) - accepts single id or array of ids
+- Similar patterns for Jars, Tags, Notes
+
+PARAMETER NAMES:
+- For searchTodos, use "query" for the search text
+- For deleteTodo, use "id" for single or "ids" for multiple
+- Always include "userId"
 
 RULES:
-1. Every tool requires "userId" - use the one provided in context.
-2. When user asks to delete items: search first, then delete each one.
-3. When user asks about their data: call the tool, get results, present nicely.
-4. DO NOT ask for confirmation before calling read-only tools (list/search/get).
-5. For destructive actions (delete/update): you may confirm first, OR just do it if user was explicit.
+1. Every tool requires "userId" - use the one provided below.
+2. Call tools immediately when user asks about their data.
 
-BEHAVIOR:
-- Be action-oriented. Call tools immediately.
-- After getting results, summarize them nicely for the user.
-- If deleting multiple items, call deleteTodo for EACH item ID.
-- Cross-reference todos with their jars/tags for context.`
+DELETE WORKFLOW (CRITICAL):
+When user asks to delete items:
+1. First, search to find matching items
+2. Show the user what you found WITH THE EXACT IDs:
+   "Found 2 items to delete:
+   - ITEM_TITLE (ID: abc123-def456...)
+   - ITEM_TITLE (ID: xyz789-ghi012...)
+   Do you want to delete these?"
+3. WAIT for user confirmation
+4. When user confirms, use the EXACT same IDs from your previous message
+5. DO NOT make up or hallucinate IDs - use ONLY IDs returned from search
+
+The user's database userId is: {{USER_ID}}
+ALWAYS use this exact userId in every tool call.`
 
 export const Route = createFileRoute('/api/ai-chat')({
   // @ts-expect-error - TanStack Start server handlers are not fully typed yet
@@ -100,15 +125,17 @@ export const Route = createFileRoute('/api/ai-chat')({
 
           const dbUserId = dbUser.id
           const currentDate = getCurrentDateString()
+          const chatModel = model || DEFAULT_MODEL
           
-          // Build full system prompt
-          const fullSystemPrompt = SYSTEM_PROMPT.replace(/\{\{CURRENT_DATE\}\}/g, currentDate) + 
-            `\n\nThe user's database ID is: ${dbUserId}\nYou MUST use this exact userId for ALL tool calls.`
+          // Build system prompt with user ID
+          const fullSystemPrompt = SYSTEM_PROMPT
+            .replace(/\{\{CURRENT_DATE\}\}/g, currentDate)
+            .replace(/\{\{USER_ID\}\}/g, dbUserId)
 
           // Convert tools to Ollama format
           const ollamaTools = convertToolsToOllamaFormat()
 
-          console.log('[AI Chat] Starting chat with model:', model || 'llama3.1:8b')
+          console.log('[AI Chat] Starting chat with model:', chatModel)
           console.log('[AI Chat] User DB ID:', dbUserId)
           console.log('[AI Chat] Tools count:', ollamaTools.length)
 
@@ -124,7 +151,7 @@ export const Route = createFileRoute('/api/ai-chat')({
             async start(controller) {
               try {
                 let iterationCount = 0
-                const maxIterations = 5
+                const maxIterations = 10
 
                 while (iterationCount < maxIterations) {
                   iterationCount++
@@ -135,10 +162,10 @@ export const Route = createFileRoute('/api/ai-chat')({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                      model: model || 'llama3.1:8b',
+                      model: chatModel,
                       messages: conversationMessages,
                       tools: ollamaTools,
-                      stream: false, // Use non-streaming for agentic loop
+                      stream: false,
                     }),
                     signal: abortController.signal,
                   })
@@ -155,7 +182,6 @@ export const Route = createFileRoute('/api/ai-chat')({
                   const data = await response.json()
                   const assistantMessage = data.message
 
-                  // Debug: log the full response
                   console.log('[AI Chat] Ollama response:', JSON.stringify(data, null, 2).slice(0, 1000))
                   console.log('[AI Chat] Has tool_calls?', !!assistantMessage?.tool_calls, assistantMessage?.tool_calls?.length || 0)
 

@@ -957,17 +957,39 @@ export async function executeTool(toolName: string, input: any): Promise<any> {
     }
     
     case 'searchTodos': {
+      // Accept various parameter names - models use wildly different names
+      let searchQuery = input.query || input.filter || input.text || input.searchTerm || 
+                        input.search || input.searchText || input.keyword || input.keywords || ''
+      
+      // Fallback: if no known parameter, look for any string that isn't userId
+      if (!searchQuery) {
+        for (const [key, value] of Object.entries(input)) {
+          if (key !== 'userId' && key !== 'limit' && typeof value === 'string' && value.length > 0) {
+            searchQuery = value
+            console.log(`[searchTodos] Using fallback param "${key}" = "${value}"`)
+            break
+          }
+        }
+      }
+      
+      if (!searchQuery) {
+        console.log('[searchTodos] No search query found in input:', JSON.stringify(input))
+        return []
+      }
+      
+      console.log(`[searchTodos] Searching for: "${searchQuery}"`)
       const todos = await prisma.todo.findMany({
         where: {
           userId: input.userId,
           OR: [
-            { title: { contains: input.query, mode: 'insensitive' } },
-            { description: { contains: input.query, mode: 'insensitive' } },
-            { aiNotes: { contains: input.query, mode: 'insensitive' } },
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+            { aiNotes: { contains: searchQuery, mode: 'insensitive' } },
           ],
         },
         take: input.limit || 20,
       })
+      console.log(`[searchTodos] Found ${todos.length} todos`)
       return todos.map(t => ({
         id: t.id,
         title: t.title,
@@ -1024,8 +1046,29 @@ export async function executeTool(toolName: string, input: any): Promise<any> {
     }
     
     case 'deleteTodo': {
-      await prisma.todo.delete({ where: { id: input.id, userId: input.userId } })
-      return { success: true }
+      // Accept id, todoId, todoIds, or ids - models use different names
+      let ids: string[] = []
+      if (input.id) ids = [input.id]
+      else if (input.todoId) ids = [input.todoId]
+      else if (input.todoIds) ids = Array.isArray(input.todoIds) ? input.todoIds : [input.todoIds]
+      else if (input.ids) ids = Array.isArray(input.ids) ? input.ids : [input.ids]
+      
+      if (ids.length === 0) {
+        console.log('[deleteTodo] No IDs found in input:', JSON.stringify(input))
+        return { success: false, error: 'No todo ID provided' }
+      }
+      
+      console.log(`[deleteTodo] Deleting ${ids.length} todos:`, ids)
+      let deletedCount = 0
+      for (const todoId of ids) {
+        try {
+          await prisma.todo.delete({ where: { id: todoId, userId: input.userId } })
+          deletedCount++
+        } catch (e: any) {
+          console.log(`[deleteTodo] Failed to delete ${todoId}:`, e.message)
+        }
+      }
+      return { success: true, deletedCount }
     }
     
     case 'updateTodoAiNotes': {

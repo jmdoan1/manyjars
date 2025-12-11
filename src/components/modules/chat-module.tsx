@@ -2,34 +2,27 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useUser } from '@clerk/clerk-react'
-import { Send, Bot, User, Loader2, Trash2, Wrench } from 'lucide-react'
+import { Send, Bot, User, Loader2, Trash2, Wrench, CheckCircle2 } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 
 import type { ModuleProps } from '@/types/dashboard-types'
 
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  toolCalls?: Array<{
-    id: string
-    name: string
-    args: any
-    result?: any
-    pending?: boolean
-  }>
-}
+// Different types of chat items for better flow visualization
+type ChatItem = 
+  | { type: 'user-message'; id: string; content: string }
+  | { type: 'assistant-message'; id: string; content: string }
+  | { type: 'tool-call'; id: string; name: string; args: any; pending: boolean; result?: any }
 
-function Messages({ messages, isLoading }: { messages: Array<ChatMessage>; isLoading: boolean }) {
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
+function ChatItems({ items, isLoading }: { items: ChatItem[]; isLoading: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight
     }
-  }, [messages])
+  }, [items])
 
-  if (!messages.length) {
+  if (!items.length) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-white/50 text-sm p-6 text-center min-h-[200px]">
         <Bot className="w-10 h-10 mb-3 opacity-50" />
@@ -42,55 +35,101 @@ function Messages({ messages, isLoading }: { messages: Array<ChatMessage>; isLoa
   }
 
   return (
-    <div ref={messagesContainerRef} className="flex-1 overflow-y-auto max-h-[400px]">
-      {messages.map((message) => (
-        <div
-          key={message.id}
-          className={`py-2 ${
-            message.role === 'assistant'
-              ? 'bg-purple-500/5'
-              : 'bg-transparent'
-          }`}
-        >
-          <div className="flex items-start gap-2 px-3">
-            {message.role === 'assistant' ? (
-              <div className="w-5 h-5 rounded bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0 mt-0.5">
-                <Bot className="w-3 h-3" />
+    <div ref={containerRef} className="flex-1 overflow-y-auto max-h-[400px] space-y-1">
+      {items.map((item) => {
+        if (item.type === 'user-message') {
+          return (
+            <div key={item.id} className="py-2 px-3 flex items-start gap-2">
+              <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <User className="w-3 h-3 text-white" />
               </div>
-            ) : (
-              <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0 mt-0.5">
-                <User className="w-3 h-3" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              {message.content && (
-                <div className="text-white prose prose-sm prose-invert max-w-none text-sm">
-                  <Streamdown>{message.content}</Streamdown>
-                </div>
-              )}
-              {message.toolCalls && message.toolCalls.length > 0 && (
-                <div className="mt-1 space-y-0.5">
-                  {message.toolCalls.map((tc) => (
-                    <div key={tc.id} className="text-[10px] text-white/40 flex items-center gap-1">
-                      {tc.pending ? (
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                      ) : (
-                        <span className="text-green-400">✓</span>
-                      )}
-                      <Wrench className="w-2.5 h-2.5" />
-                      <span>{tc.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="flex-1 text-white text-sm">{item.content}</div>
             </div>
-          </div>
-        </div>
-      ))}
-      {isLoading && messages.length > 0 && !messages[messages.length - 1]?.content && (
-        <div className="py-2 px-3 flex items-center gap-2 text-white/40 text-xs">
+          )
+        }
+        
+        if (item.type === 'assistant-message') {
+          return (
+            <div key={item.id} className="py-2 px-3 bg-purple-500/5 flex items-start gap-2">
+              <div className="w-5 h-5 rounded bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Bot className="w-3 h-3 text-white" />
+              </div>
+              <div className="flex-1 text-white prose prose-sm prose-invert max-w-none text-sm">
+                <Streamdown>{item.content}</Streamdown>
+              </div>
+            </div>
+          )
+        }
+        
+        if (item.type === 'tool-call') {
+          // Generate a human-readable description
+          const getToolDescription = () => {
+            const args = item.args || {}
+            switch (item.name) {
+              case 'listTodos':
+                return args.textSearch ? `Searching todos for "${args.textSearch}"` : 'Listing todos'
+              case 'searchTodos':
+                const query = args.query || args.filter || args.text || args.searchTerm || args.search || args.searchText || ''
+                return query ? `Searching todos for "${query}"` : 'Searching todos'
+              case 'listJars':
+                return 'Listing jars'
+              case 'listTags':
+                return 'Listing tags'
+              case 'listNotes':
+                return 'Listing notes'
+              case 'createTodo':
+                return `Creating todo: "${args.title || 'untitled'}"`
+              case 'createJar':
+                return `Creating jar: "${args.name || 'untitled'}"`
+              case 'createTag':
+                return `Creating tag: "${args.name || 'untitled'}"`
+              case 'createNote':
+                return `Creating note`
+              case 'deleteTodo':
+                return `Deleting todo`
+              case 'deleteJar':
+                return `Deleting jar`
+              case 'deleteTag':
+                return `Deleting tag`
+              case 'deleteNote':
+                return `Deleting note`
+              case 'updateTodo':
+                return `Updating todo`
+              case 'updateJar':
+                return `Updating jar`
+              case 'updateTag':
+                return `Updating tag`
+              case 'updateNote':
+                return `Updating note`
+              default:
+                return item.name
+            }
+          }
+          
+          return (
+            <div key={item.id} className="py-1 px-3 ml-7">
+              <div className="text-[11px] text-white/50 flex items-center gap-1.5 bg-white/5 rounded px-2 py-1 w-fit">
+                {item.pending ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                ) : (
+                  <CheckCircle2 className="w-3 h-3 text-green-400" />
+                )}
+                <Wrench className="w-3 h-3" />
+                <span>{getToolDescription()}</span>
+                {item.result?.error && (
+                  <span className="text-red-400 ml-1">- Error</span>
+                )}
+              </div>
+            </div>
+          )
+        }
+        
+        return null
+      })}
+      {isLoading && items.length > 0 && (
+        <div className="py-2 px-3 ml-7 flex items-center gap-2 text-white/40 text-xs">
           <Loader2 className="w-3 h-3 animate-spin" />
-          <span>Thinking...</span>
+          <span>Processing...</span>
         </div>
       )}
     </div>
@@ -100,39 +139,36 @@ function Messages({ messages, isLoading }: { messages: Array<ChatMessage>; isLoa
 export function ChatModule(props: ModuleProps) {
   const { user } = useUser()
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [chatItems, setChatItems] = useState<ChatItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   
-  // Get model from config or use default
-  const model = (props.config as any)?.model || 'llama3.1:8b'
+  const model = (props.config as any)?.model || 'qwen2.5:7b-instruct'
   const userId = user?.id
+
+  // Convert chat items to messages format for API
+  const getApiMessages = () => {
+    const messages: Array<{ role: string; content: string }> = []
+    for (const item of chatItems) {
+      if (item.type === 'user-message') {
+        messages.push({ role: 'user', content: item.content })
+      } else if (item.type === 'assistant-message' && item.content) {
+        messages.push({ role: 'assistant', content: item.content })
+      }
+    }
+    return messages
+  }
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || !userId || isLoading) return
 
     // Add user message
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: text,
-    }
-    
-    const assistantMessage: ChatMessage = {
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      content: '',
-      toolCalls: [],
-    }
-
-    setMessages(prev => [...prev, userMessage, assistantMessage])
+    const userMsgId = `user-${Date.now()}`
+    setChatItems(prev => [...prev, { type: 'user-message', id: userMsgId, content: text }])
     setIsLoading(true)
 
-    // Prepare messages for API (just role and content)
-    const apiMessages = [...messages, userMessage].map(m => ({
-      role: m.role,
-      content: m.content,
-    }))
+    // Prepare messages for API
+    const apiMessages = [...getApiMessages(), { role: 'user', content: text }]
 
     try {
       abortControllerRef.current = new AbortController()
@@ -157,6 +193,8 @@ export function ChatModule(props: ModuleProps) {
 
       const decoder = new TextDecoder()
       let buffer = ''
+      let currentAssistantId: string | null = null
+      const toolCallIds = new Set<string>() // Track existing tool call IDs to avoid duplicates
 
       while (true) {
         const { done, value } = await reader.read()
@@ -175,55 +213,63 @@ export function ChatModule(props: ModuleProps) {
               const parsed = JSON.parse(data)
               
               if (parsed.type === 'text-delta' && parsed.textDelta) {
-                // Append text to assistant message
-                setMessages(prev => {
+                // Append text to current assistant message or create new one
+                setChatItems(prev => {
                   const updated = [...prev]
-                  const lastMsg = updated[updated.length - 1]
-                  if (lastMsg && lastMsg.role === 'assistant') {
-                    lastMsg.content += parsed.textDelta
+                  // Find last assistant message with current ID
+                  let lastAssistantIndex = -1
+                  for (let i = updated.length - 1; i >= 0; i--) {
+                    if (updated[i].type === 'assistant-message' && updated[i].id === currentAssistantId) {
+                      lastAssistantIndex = i
+                      break
+                    }
+                  }
+                  
+                  if (lastAssistantIndex >= 0) {
+                    const item = updated[lastAssistantIndex] as { type: 'assistant-message'; id: string; content: string }
+                    item.content += parsed.textDelta
+                  } else {
+                    currentAssistantId = `assistant-${Date.now()}`
+                    updated.push({ type: 'assistant-message', id: currentAssistantId, content: parsed.textDelta })
                   }
                   return updated
                 })
               } else if (parsed.type === 'tool-call') {
-                // Add tool call to assistant message
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const lastMsg = updated[updated.length - 1]
-                  if (lastMsg && lastMsg.role === 'assistant') {
-                    if (!lastMsg.toolCalls) lastMsg.toolCalls = []
-                    lastMsg.toolCalls.push({
+                // Add tool call as separate item (avoid duplicates)
+                if (!toolCallIds.has(parsed.toolCallId)) {
+                  toolCallIds.add(parsed.toolCallId)
+                  setChatItems(prev => [
+                    ...prev,
+                    {
+                      type: 'tool-call',
                       id: parsed.toolCallId,
                       name: parsed.toolName,
                       args: parsed.args,
                       pending: true,
-                    })
-                  }
-                  return updated
-                })
+                    },
+                  ])
+                }
+                // Reset currentAssistantId so next text creates new message
+                currentAssistantId = null
               } else if (parsed.type === 'tool-result') {
-                // Mark tool call as complete
-                setMessages(prev => {
+                // Update tool call with result
+                setChatItems(prev => {
                   const updated = [...prev]
-                  const lastMsg = updated[updated.length - 1]
-                  if (lastMsg && lastMsg.role === 'assistant' && lastMsg.toolCalls) {
-                    const tc = lastMsg.toolCalls.find(t => t.id === parsed.toolCallId)
-                    if (tc) {
-                      tc.pending = false
-                      tc.result = parsed.result
-                    }
+                  const toolIndex = updated.findIndex(
+                    item => item.type === 'tool-call' && item.id === parsed.toolCallId
+                  )
+                  if (toolIndex >= 0) {
+                    const item = updated[toolIndex] as { type: 'tool-call'; id: string; name: string; args: any; pending: boolean; result?: any }
+                    item.pending = false
+                    item.result = parsed.result
                   }
                   return updated
                 })
               } else if (parsed.type === 'error') {
-                // Handle error
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const lastMsg = updated[updated.length - 1]
-                  if (lastMsg && lastMsg.role === 'assistant') {
-                    lastMsg.content = `Error: ${parsed.error?.message || 'Unknown error'}`
-                  }
-                  return updated
-                })
+                setChatItems(prev => [
+                  ...prev,
+                  { type: 'assistant-message', id: `error-${Date.now()}`, content: `Error: ${parsed.error?.message || 'Unknown error'}` },
+                ])
               }
             } catch {
               // Skip invalid JSON
@@ -233,14 +279,10 @@ export function ChatModule(props: ModuleProps) {
       }
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        setMessages(prev => {
-          const updated = [...prev]
-          const lastMsg = updated[updated.length - 1]
-          if (lastMsg && lastMsg.role === 'assistant') {
-            lastMsg.content = `Error: ${error.message}`
-          }
-          return updated
-        })
+        setChatItems(prev => [
+          ...prev,
+          { type: 'assistant-message', id: `error-${Date.now()}`, content: `Error: ${error.message}` },
+        ])
       }
     } finally {
       setIsLoading(false)
@@ -252,15 +294,13 @@ export function ChatModule(props: ModuleProps) {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
-    setMessages([])
+    setChatItems([])
   }
 
   return (
     <div className="flex flex-col gap-2 h-full">
-      {/* Messages Area */}
-      <Messages messages={messages} isLoading={isLoading} />
+      <ChatItems items={chatItems} isLoading={isLoading} />
 
-      {/* Input Area */}
       <div className="border-t border-white/10 pt-2">
         <form
           onSubmit={(e) => {
@@ -305,7 +345,7 @@ export function ChatModule(props: ModuleProps) {
                   <Send className="w-4 h-4" />
                 )}
               </button>
-              {messages.length > 0 && (
+              {chatItems.length > 0 && (
                 <button
                   type="button"
                   onClick={clearChat}
