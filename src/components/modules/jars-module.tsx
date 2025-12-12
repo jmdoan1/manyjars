@@ -6,8 +6,9 @@ import { Archive, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 import { EntityPills } from "./entity-pills"
 import { MentionEditor } from "../mentions/mention-editor"
 import { ModuleFilter } from "./module-filter"
-import type { ModuleProps } from '@/types/dashboard-types'
-
+import type { ModuleProps } from '@/types/dashboard-types'  
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faJar } from '@fortawesome/free-solid-svg-icons'
 import { ModuleSort } from "./module-sort"
 
 export function JarsModule(props: ModuleProps) {
@@ -228,7 +229,7 @@ export function JarsModule(props: ModuleProps) {
           >
             <div className="flex items-start gap-4">
               <div className="mt-1 w-8 h-8 rounded shrink-0 bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-200">
-                <Archive className="w-4 h-4" />
+                <FontAwesomeIcon icon={faJar} />
               </div>
 
               <div className="flex-1 min-w-0 flex flex-col gap-1">
